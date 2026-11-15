@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Volk Sprite-Galerie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:monospace;background:#1d2230;color:#e8ecf4;margin:12px}
+h2{margin:18px 0 6px;font-size:16px;color:#f1c40f}
+.raster{display:flex;flex-wrap:wrap;gap:8px}
+.k{background:#3a4258;border:1px solid #556;padding:4px;text-align:center;font-size:10px;min-width:70px}
+.k.hell{background:#9fb88a}
+canvas{image-rendering:pixelated;display:block;margin:0 auto 3px}
+#steuer{position:sticky;top:0;background:#1d2230;padding:6px 0;z-index:2}
+</style></head><body>
+<div id="steuer">Kategorie: <select id="kat"><option value="">alle</option></select>
+Skalierung: <input id="sk" type="number" value="3" min="1" max="12" style="width:44px">
+Spielerfarbe: <input id="farbe" type="color" value="#2f6fd0"> Zeitalter (für Städte/Einheiten): <select id="za"><option value="-1">alle</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>
+Hintergrund hell <input type="checkbox" id="hg"></div>
+<div id="ziel"></div>
+<script type="module">
+import { alleSprites, sprite } from '../public/js/grafik/sprites.js';
+import '../public/js/grafik/alle.js';
+const q = new URLSearchParams(location.search);
+const kat = document.getElementById('kat'), sk = document.getElementById('sk'), farbe = document.getElementById('farbe'), za = document.getElementById('za'), hg = document.getElementById('hg');
+const liste = alleSprites();
+for (const k of [...new Set(liste.map(s => s.kategorie))]) { const o = document.createElement('option'); o.textContent = k; kat.appendChild(o); }
+if (q.get('kat')) kat.value = q.get('kat'); if (q.get('sk')) sk.value = q.get('sk'); if (q.get('za')) za.value = q.get('za'); if (q.get('hell')) hg.checked = true;
+function zeige() {
+  const ziel = document.getElementById('ziel'); ziel.innerHTML = '';
+  const s = +sk.value, nurZ = +za.value;
+  const gruppen = {};
+  for (const sp of liste) if (!kat.value || sp.kategorie === kat.value) (gruppen[sp.kategorie] ||= []).push(sp);
+  for (const [k, l] of Object.entries(gruppen)) {
+    const h = document.createElement('h2'); h.textContent = k + ' (' + l.length + ')'; ziel.appendChild(h);
+    const r = document.createElement('div'); r.className = 'raster'; ziel.appendChild(r);
+    for (const sp of l) {
+      const zs = sp.zeitalterVarianten ? (nurZ >= 0 ? [nurZ] : [0,1,2,3,4,5,6]) : [nurZ >= 0 ? nurZ : 0];
+      const vs = sp.varianten || 1;
+      const gs = sp.groessen || 1;
+      for (const z of zs) for (let v = 0; v < vs; v++) for (let g = 1; g <= gs; g++) {
+        const c = sprite(sp.kategorie, sp.id, { farbe: farbe.value, zeitalter: z, variante: v, groesse: g });
+        const d = document.createElement('div'); d.className = 'k' + (hg.checked ? ' hell' : '');
+        const cv = document.createElement('canvas'); cv.width = c.width * s; cv.height = c.height * s;
+        const x = cv.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(c, 0, 0, cv.width, cv.height);
+        d.appendChild(cv); d.appendChild(document.createTextNode(sp.id + (zs.length > 1 || sp.zeitalterVarianten ? ' z' + z : '') + (vs > 1 ? ' v' + v : '') + (gs > 1 ? ' g' + g : '')));
+        r.appendChild(d);
+      }
+    }
+  }
+  document.body.dataset.fertig = '1';
+}
+for (const e of [kat, sk, farbe, za, hg]) e.onchange = zeige;
+zeige();
+</script></body></html>

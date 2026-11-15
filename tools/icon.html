@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Volk Icon</title><style>body{margin:0;background:#000}canvas{image-rendering:pixelated}</style></head><body>
+<canvas id="c" width="128" height="128" style="width:512px;height:512px"></canvas>
+<script type="module">
+// Das Hub-Icon wird aus Spielelementen gerendert: Hexfeld mit Seitenkante, Wald, Gebirge und eine Stadt mit Burgturm.
+import { sprite } from '../public/js/grafik/sprites.js';
+import '../public/js/grafik/alle.js';
+const c = document.getElementById('c'), x = c.getContext('2d');
+x.imageSmoothingEnabled = false;
+// Hintergrund: Nachthimmel-Verlauf in Stufen
+const stufen = ['#141a2e', '#18213a', '#1d2946', '#223253'];
+stufen.forEach((f, i) => { x.fillStyle = f; x.fillRect(0, i * 32, 128, 32); });
+// Hexfeld (Spitze oben, gestaucht) mit Seitenkante
+function hex(cx, cy, r, f) { x.beginPath(); for (let k = 0; k < 6; k++) { const a = (30 + k * 60) * Math.PI / 180; const px = Math.round(cx + Math.cos(a) * r), py = Math.round(cy - Math.sin(a) * r * 0.72); k ? x.lineTo(px, py) : x.moveTo(px, py); } x.closePath(); x.fillStyle = f; x.fill(); }
+hex(64, 74, 56, '#2b2118');
+hex(64, 78, 54, '#3f6b30');
+hex(64, 72, 54, '#2b2118');
+hex(64, 72, 52, '#6aa84f');
+// Rauschen auf dem Gras
+for (let i = 0; i < 400; i++) { const px = (i * 37) % 128, py = 40 + ((i * 53) % 64); const d = x.getImageData(px, py, 1, 1).data; if (d[1] > 150 && d[0] < 120) { x.fillStyle = i % 3 ? '#78b85a' : '#5f9a47'; x.fillRect(px, py, 1, 1); } }
+const male = (s, px, py) => s && x.drawImage(s, px, py);
+male(sprite('deko', 'gebirge', { variante: 1 }), 66, 32);
+male(sprite('deko', 'wald', { variante: 2 }), 8, 48);
+male(sprite('deko', 'wald', { variante: 0 }), 72, 60);
+male(sprite('stadt', 'stadt', { farbe: '#e63946', zeitalter: 2, groesse: 3 }), 28, 36);
+male(sprite('stadt', 'mauer', { farbe: '#e63946', zeitalter: 1 }), 28, 36);
+male(sprite('einheit', 'ritter', { farbe: '#e63946' }), 74, 72);
+document.body.dataset.fertig = '1';
+</script></body></html>

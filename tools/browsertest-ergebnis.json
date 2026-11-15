@@ -1,0 +1,140 @@
+{
+ "zeit": "2026-11-15T03:43:29.340Z",
+ "ergebnisse": [
+  {
+   "name": "Startseite lädt (Anmeldemaske)",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Registrierung führt zur Volksgründung",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Volk gegründet, Spielansicht aufgebaut",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Tutorial erscheint für neue Spieler",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Erste Stadt gegründet",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Karte pannen und zoomen (Maus)",
+   "ok": true,
+   "info": "{\"x\":4849.414082635668,\"y\":584.2400000000004,\"zoom\":2}"
+  },
+  {
+   "name": "Bauauftrag (Krieger) angenommen",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Forschungsbaum",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Stadtfenster",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Reich",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Diplomatie",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Rangliste",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Lexikon",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Hilfe",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Fenster: Einstellungen",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Forschung gestartet",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Zeitregler + Bau fertig nach Zeitsprung (Deltas kommen an)",
+   "ok": true,
+   "info": "Krieger: 2"
+  },
+  {
+   "name": "Einheit bewegen mit Ankunftszeit",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Kampfvorschau antwortet verständlich",
+   "ok": true,
+   "info": "{\"ok\":false,\"grund\":\"Dort ist kein Ziel.\"}"
+  },
+  {
+   "name": "Keine Konsolenfehler im Spiel",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Hub-iframe: Spiel meldet {lgh:\"ton-bereit\"}",
+   "ok": true,
+   "info": "[{\"lgh\":\"ton-bereit\"},{\"lgh\":\"ton-bereit\"},{\"lgh\":\"stand\",\"spiel\":\"volk\",\"t\":179"
+  },
+  {
+   "name": "Hub-iframe: Spiel lädt im Rahmen (Token aus localStorage)",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Hub-iframe: keine Fehler",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Oben links (64×56) ist frei für das Hub-Symbol",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "Touch: Ziehen verschiebt die Karte",
+   "ok": true,
+   "info": "{\"x\":4859.414082635663,\"y\":587.573333333333,\"zoom\":1.5}"
+  },
+  {
+   "name": "Touch: Zwei-Finger-Zoom",
+   "ok": true,
+   "info": "Zoom 1.5 → 3.3"
+  },
+  {
+   "name": "Tablet/Demo ohne Fehler",
+   "ok": true,
+   "info": ""
+  }
+ ]
+}

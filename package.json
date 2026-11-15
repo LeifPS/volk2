@@ -1,0 +1,18 @@
+{
+  "name": "volk2",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Volk: Echtzeit-Multiplayer-Aufbaustrategie im Pixelart-Stil",
+  "scripts": {
+    "dev": "wrangler dev --var ZEITFAKTOR_ERLAUBT:1",
+    "deploy": "wrangler deploy",
+    "test": "node --test --test-concurrency=4 \"tests/*.test.mjs\"",
+    "balance": "node tools/balance-sim.mjs",
+    "browsertest": "node tools/browsertest.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.51.1",
+    "wrangler": "^4.40.0"
+  }
+}
