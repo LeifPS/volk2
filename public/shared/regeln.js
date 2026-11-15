@@ -141,10 +141,10 @@ export function gesamtWertung(k) {
 // --- Partie (Runden-Modus wie Civilization) ---
 /** Spieltempo = Länge einer Runde in Spielzeit. Längere Runden bedeuten: Bauen, Forschen und Wachsen dauern weniger Runden. */
 export const SPIELTEMPO = {
-  episch: { name: 'Episch', rundeMs: 30 * MIN, text: 'Lange Partie, alles dauert viele Runden.' },
-  normal: { name: 'Normal', rundeMs: 60 * MIN, text: 'Ausgewogenes Tempo.' },
-  schnell: { name: 'Schnell', rundeMs: 120 * MIN, text: 'Alles geht in weniger Runden.' },
-  blitz: { name: 'Blitz', rundeMs: 240 * MIN, text: 'Kurze Partie, wenig Runden.' },
+  episch: { name: 'Episch', rundeMs: 60 * MIN, text: 'Lange Partie, alles dauert viele Runden.' },
+  normal: { name: 'Normal', rundeMs: 120 * MIN, text: 'Ausgewogenes Tempo.' },
+  schnell: { name: 'Schnell', rundeMs: 240 * MIN, text: 'Alles geht in weniger Runden.' },
+  blitz: { name: 'Blitz', rundeMs: 480 * MIN, text: 'Kurze Partie, wenig Runden.' },
 };
 /** Standard-Einstellungen einer Partie (der Host kann sie in der Lobby ändern). */
 export const PARTIE = {

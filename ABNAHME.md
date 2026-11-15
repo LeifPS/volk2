@@ -1,5 +1,31 @@
 # Abnahme: Was wurde wie getestet (ehrlich)
 
+## Version 2 (Runden, Repo volk2)
+**Automatische Tests (`npm test`): 65 von 65 bestanden** (Node 22). Neu bzw. umgeschrieben:
+- `tests/runden.test.mjs`: Zugreihenfolge, Sperre für Spieler, die nicht dran sind, Bewegungspunkte und Weitermarsch, Zugzeit-Konto, Überspringen, KI-Ersatz, Siege (Eroberung, Wissenschaft, Punkte), KI-Stufen.
+- `tests/server.test.mjs`: Konten, Admin, Lobby-Ablauf (Partie erstellen, beitreten, starten), Partie-Server (Autorität, Zuggating, Speichern/Laden, Zugzeit-Alarm, Deltas).
+- `tests/mehrspieler.test.mjs`: 4 Bot-Menschen + 2 KI + 4 Stadtstaaten + Barbaren über 250 Runden, Konsistenzprüfungen (Stapelregel, Besitz, Gold). Die frühere Lastabschätzung in Alarmen/Tag gilt nicht mehr; im Rundenmodus gibt es nur noch einen Alarm je Zug.
+- `tests/regression.test.mjs`, `statisch.test.mjs` auf `PartieServer`, `volk2`, Klassen `Lobby`/`Partie` angepasst.
+
+**Ende-zu-Ende lokal (`wrangler dev` + Skript):** Konten registrieren, Partie erstellen, beitreten, starten, per WebSocket 6 Züge spielen; Befehle des Spielers, der nicht dran ist, werden abgelehnt; Lobby-Liste zeigt Runde und „am Zug“.
+
+**Browser (Headless-Chrome, Playwright):** Anmeldung → Konto → Lobby → Neue Partie (Formular) → Wartezimmer → Starten → Spielansicht mit Rundenleiste, Auswahlfenster mit Bewegungspunkten → „Zug beenden“ → Runde 2. Keine Konsolen- oder Seitenfehler. Zwei Layoutfehler (überlaufende Formularfelder, Knopf-Überlappung) wurden dabei gefunden und behoben.
+
+**Balance:** `npm run balance:runden`. Langläufe mit untätigem Menschen und 4 KI (Normal und Boni III, je 200–400 Runden): keine Fehler, 400 Runden ≈ 4 s Rechenzeit; KI-Völker erforschen alles bis zur Moderne (≈ 205 Forschungen) nach ≈ 140 (Normal) bzw. ≈ 350 Runden (Boni III), bleiben bei 3–5 Städten.
+
+### Was NICHT getestet wurde
+- **Kein echtes Deployment** (Push auf `volk2` ja, aber Cloudflare-Anbindung/Workers Builds nicht eingerichtet; `wrangler deploy --dry-run` lief durch).
+- **Kein Spiel mit zwei echten Menschen im Browser;** nur per Skript/Bots und ein Mensch im Browser.
+- **Nicht von Hand durchgespielt** (auch nicht bis zu einem Sieg); Siege sind nur in Tests und Langläufen geprüft.
+- **`tools/browsertest.mjs` und `tools/screenshots.mjs`** stammen aus der Echtzeit-Fassung und laufen mit dem Lobby-Ablauf nicht mehr; `tools/trailer.mjs` ebenso.
+- **Demo-Modus (`?demo=1`)** ist unverändert Echtzeit und nicht erneut geprüft.
+- **Safari/iPad, Musik, Touch** nicht neu geprüft.
+- **KI-Verhalten:** KI-Völker beginnen Kriege nur nach Provokation und erobern nicht von sich aus; bei den höheren Stufen ist die KI stärker, aber nicht grundsätzlich aggressiver als in Civ.
+- Einheiten springen ohne Schrittanimation.
+
+---
+
+## Echtzeit-Fassung (Version 1, nur zur Dokumentation)
 Stand: Ende der ersten Fassung. Alle Ergebnisse unten sind tatsächlich gelaufen (macOS, Node 24, Chromium 134 über Playwright 1.51, `wrangler dev` 4.x lokal).
 
 ## Automatische Tests (`npm test`): 56 von 56 bestanden

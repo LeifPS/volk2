@@ -1,5 +1,20 @@
 # Entscheidungen
 
+## Version 2 (volk2): Runden statt Echtzeit
+Leifs Vorgabe: Civilization 1:1 als Pixelart-Spiel, wie ein Brettspiel (Boardgame-Arena-Gefühl), mit Menschen und/oder KI.
+- **Partien statt einer Welt.** Eine Lobby (Durable Object `Lobby`) verwaltet Konten und Partien, jede Partie ist ein eigenes Durable Object (`Partie`). Host legt Einstellungen fest, andere treten per Namen bei.
+- **Reihum ziehen.** Zugreihenfolge zufällig; nur wer dran ist, darf Befehle geben (Ausnahmen: Meldungen lesen, Tutorial, Ping, Einstellungen, Diplomatie-Antworten). Andere sehen nur „X ist am Zug“. KI zieht sofort.
+- **Spielzeit steht im Zug still** und springt nach jeder Runde um `rundeMs`. Bauen, Forschen und Wachstum laufen dann ab. Bewegung nutzt Bewegungspunkte je Runde, ein Angriff beendet die Bewegung.
+- **Spieltempo:** Episch 1 / Normal 2 / Schnell 4 / Blitz 8 Std Spielzeit je Runde. Begründung: der ganze Baum braucht ≈ 650 Std; bei 1 Std je Runde wäre der Wissenschaftssieg vor dem Rundenlimit 400 unerreichbar. Frühe Dinge (Krieger ≈ 3 Min) sind trotzdem in 1 Runde fertig; das ist gewollt: Antike geht flott, später wird es zäher.
+- **Zugzeit-Konto** (Leifs Idee): 24 Std Start, +1 Std je beendetem Zug, höchstens 24; nur bei mehr als einem Menschen aktiv; alles einstellbar. Ablauf → Zug wird automatisch beendet. Konto 0 und nicht verbunden → übersprungen.
+- **Abwesenheit:** Laufende Forschung, Bauaufträge und Märsche gehen weiter; neue Entscheidungen fallen aus. Nach `verpasstMax` (5) verpassten Zügen übernimmt die KI, der Mensch hat verloren.
+- **Siege:** Eroberung (nur ein Volk aktiv übrig), Wissenschaft (als Erster „Fusionsforschung“), Punkte beim Rundenlimit. Host kann Siegarten abschalten.
+- **KI-Stufen:** Leicht (langsamer, beginnt nie Krieg), Normal, Schwer (früher Krieg, größerer Angriffsradius, mehr Militär) und Boni I–III (zusätzlich Bau-/Forschungstempo, Gold, Kampfstärke). Im Langlauf haben alle KI-Völker den Baum bis zur Moderne in ≈ 100–350 Runden erforscht, je nach Stufe.
+- **Neulingsschutz, Online/Offline-Regeln und Waffenruhe entfallen** (gelten nur für Echtzeit). Barbaren und Tiere bleiben.
+- **Bekannte Schwäche:** KI-Völker erklären Menschen nur nach Provokation Krieg und erobern nie von sich aus (aus dem Echtzeit-Spiel übernommen). Ein aggressiverer Civ-KI-Charakter ist ein nächster Schritt.
+
+Die folgenden Abschnitte stammen aus der Echtzeit-Fassung; Regeln zu Zeit, online/offline, Neulingsschutz und Marschtempo gelten in Version 2 nicht mehr.
+
 Leitsatz: "Was macht das Spiel für ein paar Freunde und die Familie am besten spielbar?"
 
 ## Technik

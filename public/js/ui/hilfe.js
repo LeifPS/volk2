@@ -94,9 +94,6 @@ export function tippsSammeln() {
   // Barbarenlager nahe den eigenen Städten
   const lager = Object.values(Z.ansicht?.lager || {}).map((l) => ({ l, d: Math.min(99, ...staedte.map((s) => abstand(s.feld, l.feld))) })).filter((x) => x.d <= 9).sort((a, b) => a.d - b.d)[0];
   if (lager) add(58, ['ui', 'pluendern'], H.t.lager, () => { alleFensterZu(); springe(lager.l.feld); });
-  // Neulingsschutz endet bald
-  const rest = (d.schutz_bis || 0) - jetzt;
-  if (rest > 0 && rest < 4 * 3600000) add(56, ['ui', 'schild'], H.t.schutz(dauerText(rest)), () => F.lexikon('regel', 'neulingsschutz'));
   // Weitere Städte gründen
   const hauptstadt = staedte.find((s) => s.hauptstadt) || staedte[0];
   if (hauptstadt && staedte.length < 4 && !siedler.length && !staedte.some((s) => baut(s, 'siedler'))) add(54, ['einheit', 'siedler', { farbe }], H.t.siedler, () => zuStadt(hauptstadt, 'bauen'));

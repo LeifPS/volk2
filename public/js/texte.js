@@ -145,12 +145,9 @@ export const T = {
     regeln: {
       titel: 'So schützt das Spiel dich',
       punkte: [
-        'Neulingsschutz: In den ersten 24 Stunden nach der Gründung kann dich kein anderer Spieler angreifen. Barbaren ignorieren den Schutz. Erklärst du selbst Krieg, endet er sofort.',
-        'Krieg darf man nur Spielern erklären, die gerade online sind.',
-        'Ist ein Spieler im Krieg länger als 30 Minuten offline, gilt Waffenruhe: Niemand darf ihn angreifen, er niemanden.',
-        'Kommt er zurück, gibt es 10 Minuten Schonfrist, bevor der Krieg weitergeht.',
-        'Nach 12 Stunden ohne Kampf schlägt das Spiel Frieden vor. Frieden gilt nur, wenn beide zustimmen.',
-        'KI-Völker greifen Spieler nie von sich aus an. Stadtstaaten werden durch Geschenke zu Freunden (ab 30 Einfluss) und Verbündeten (ab 60).',
+        'Krieg kannst du jedem Volk erklären, das du kennst. Frieden gilt nur, wenn beide zustimmen.',
+        'Nach 12 Stunden Spielzeit ohne Kampf schlägt das Spiel Frieden vor.',
+        'KI-Völker beginnen Kriege nur, wenn man sie wiederholt verärgert (Leicht: nie). Stadtstaaten werden durch Geschenke zu Freunden (ab 30 Einfluss) und Verbündeten (ab 60).',
       ],
     },
   },
@@ -290,15 +287,16 @@ T.lexikon = {
   fluss: 'Fluss',
   regeln: [
     { id: 'ziel', titel: 'Worum geht es?', sym: 'krone', absaetze: () => [
-      'In Volk baust du dein eigenes Volk in einer großen, gemeinsamen Welt auf. Du gründest Städte, erforschst Neues, erkundest die Karte, handelst, schließt Freundschaften – oder führst Krieg.',
-      'Es gibt **kein festes Ende** und keinen „Sieg“. Wer mag, misst sich in der Rangliste, baut Weltwunder oder erforscht den ganzen Baum. Du kannst jederzeit spielen und aufhören – die Welt läuft weiter, und dir passiert nichts, solange du offline bist (siehe [[regel:offline]]).',
-      'Die ersten Schritte: [[einheit:siedler|Siedler]] gründet eine Stadt → Stadt baut [[einheit:krieger|Krieger]] oder [[einheit:arbeiter|Arbeiter]] → Forschung starten → mit dem [[einheit:spaeher|Späher]] die Welt erkunden.',
+      'In Volk baust du wie in Civilization dein eigenes Volk auf, **Runde für Runde**. Du gründest Städte, erforschst Neues, erkundest die Karte, handelst, schließt Bündnisse – oder führst Krieg. Alles im Pixelart-Stil, allein gegen KI-Völker oder mit Freunden und Familie.',
+      'Eine Partie endet mit einem **Sieg**: **Eroberung** (nur noch ein Volk ist übrig), **Wissenschaft** (als Erster die Fusionsforschung abschließen) oder **Punkte** (beim Rundenlimit gewinnt die höchste Wertung). Der Host legt in der Lobby fest, welche Siege gelten.',
+      'Die ersten Schritte: [[einheit:siedler|Siedler]] gründet eine Stadt → Stadt baut [[einheit:krieger|Krieger]] oder [[einheit:arbeiter|Arbeiter]] → Forschung starten → mit dem [[einheit:spaeher|Späher]] die Welt erkunden → **Zug beenden**.',
     ] },
-    { id: 'zeit', titel: 'Zeit statt Runden', sym: 'uhr', absaetze: () => [
-      'Es gibt **keine Runden**. Alles läuft in echter Zeit weiter, auch wenn du nicht da bist: Truppen marschieren, Gebäude entstehen, Forschungen werden fertig.',
-      'Am Anfang dauert vieles nur Minuten, später Stunden und ganz am Ende sogar Tage. Du musst also nicht ständig online sein: Schau einfach ab und zu vorbei, gib neue Befehle und lass die Zeit für dich arbeiten.',
+    { id: 'zeit', titel: 'Runden und Zugzeit', sym: 'uhr', absaetze: (R) => [
+      'Volk wird in **Runden** gespielt. In einer Runde ist jedes Volk **reihum am Zug**: Wer dran ist, gibt Befehle und drückt dann **Zug beenden**. KI-Völker ziehen sofort. Von den anderen Menschen siehst du nur, wer gerade am Zug ist.',
+      'Haben alle gezogen, beginnt die nächste Runde. Dann rechnet die Welt eine feste **Spielzeit** weiter (Standard: 2 Stunden je Runde, im Spieltempo einstellbar). In dieser Zeit werden Gebäude fertig, Forschungen abgeschlossen, Städte wachsen und Barbaren und Tiere ziehen. Alle Zeitangaben im Spiel erscheinen deshalb in **Runden**; Raten wie Gold/h sind pro Stunde Spielzeit.',
+      `Spielen mehrere Menschen, gibt es ein **Zugzeit-Konto** (echte Zeit): Jeder startet standardmäßig mit ${Math.round(R.PARTIE.zugzeit.start / R.STD)} Stunden, die nur im eigenen Zug ablaufen. Für jeden beendeten Zug gibt es ${Math.round(R.PARTIE.zugzeit.plus / R.STD)} Stunde dazu, höchstens ${Math.round(R.PARTIE.zugzeit.max / R.STD)}. Der Host kann das in der Lobby ändern.`,
+      '**Wer nicht zieht:** Läuft die Zugzeit ab, wird der Zug automatisch beendet. Bereits laufende Dinge gehen weiter: Forschung, Bauaufträge und Marschbefehle. Neue Entscheidungen (etwas Neues bauen oder erforschen) fallen aus. Wer mehrere Züge hintereinander verpasst, wird von der **KI ersetzt** und hat die Partie damit **verloren**.',
       '**Flotter Start:** In der Antike gehen Bauen, Ausbilden und Forschen doppelt so schnell, im nächsten Zeitalter noch anderthalbfach, danach etwas weniger. Auch die ersten Einwohner und Grenzfelder kommen schneller. Später wird alles Schritt für Schritt zäher.',
-      'Bevor du etwas startest, zeigt das Spiel immer, **wie lange es dauert** (z. B. die Ankunftszeit einer Einheit). Abkürzen mit Gold oder Echtgeld gibt es nicht.',
     ] },
     { id: 'bauen', titel: 'Bauen', sym: 'bau', absaetze: (R) => [
       'Jede Stadt baut **einen Auftrag gleichzeitig**: eine Einheit, ein [[kat:gebaeude|Gebäude]] oder ein [[kat:wunder|Weltwunder]]. Weitere Aufträge kannst du in die Warteschlange stellen. Später erlauben Forschungen einen 2. und 3. gleichzeitigen Auftrag.',
@@ -312,9 +310,9 @@ T.lexikon = {
       '**Wissenschaft** macht die Forschung schneller: jeder Punkt um 1 %. 100 Wissenschaft heißt also doppelt so schnell. Forschungen der frühen Zeitalter sind außerdem von Haus aus schneller (Antike doppelt so schnell). Wissenschaft kommt aus Städten, Bibliotheken, Universitäten, Wundern und Forschungsabkommen.',
       'Tipp: Achte darauf, dass immer eine Forschung läuft. Oben rechts blinkt es, wenn nicht.',
     ] },
-    { id: 'bewegung', titel: 'Bewegung', sym: 'bewegen', absaetze: (R) => [
-      'Wähle eine Einheit aus und gib per **Rechtsklick** (Tablet: **lange drücken**) ein Ziel an. Die Einheit läuft los, und du siehst sofort die **Ankunftszeit**.',
-      `Ein Schritt auf flachem Land dauert für eine normale Einheit (Tempo 2) etwa ${Math.round(R.schrittDauer(1, 2) / 60000)} Minuten. Wald, Hügel, Sumpf und Gebirge kosten mehr, Straßen viel weniger. Schnelle Einheiten (Reiter, später Fahrzeuge) haben mehr Tempo.`,
+    { id: 'bewegung', titel: 'Bewegung', sym: 'bewegen', absaetze: () => [
+      'Wähle eine Einheit aus und gib per **Rechtsklick** (Tablet: **lange drücken**) ein Ziel an. Die Einheit läuft sofort so weit, wie ihre **Bewegungspunkte** reichen, und marschiert in den nächsten Runden von allein weiter.',
+      'Jede Einheit hat pro Runde so viele Bewegungspunkte wie ihr Tempo (normale Einheit: 2, Reiter und später Fahrzeuge mehr). Ein Feld Flachland kostet 1 Punkt, Wald, Hügel, Sumpf und Gebirge mehr, Straßen weniger. **Ein Angriff beendet die Bewegung** der Einheit in dieser Runde.',
       'Auf einem Feld darf **eine Militäreinheit und eine zivile Einheit** stehen. Fremdes Gebiet darfst du nur mit **Offenen Grenzen** oder im Krieg betreten. Aufs Wasser kommen Landeinheiten erst nach der passenden Forschung (Einschiffen).',
       'Komfort: [[einheit:spaeher|Späher]] können **automatisch erkunden**, Arbeiter **automatisch arbeiten**. Einheiten können **schlafen** oder sich **befestigen** – dann überspringt sie der Knopf „Nächste Aktion“.',
     ] },
@@ -352,8 +350,8 @@ T.lexikon = {
     ] },
     { id: 'goldmangel', titel: 'Goldmangel', sym: 'warnung', absaetze: () => [
       'Ist dein Einkommen negativ **und** die Kasse leer, bekommst du zuerst eine **Warnung**. Es passiert nichts Überraschendes.',
-      'Nur wenn du **online** bist, wird danach etwa stündlich die schwächste Militäreinheit **unterversorgt** (−5 Stärke, heilt nicht). Hält der Mangel lange an, wird die schwächste Militäreinheit aufgelöst. Siedler, Arbeiter, Späher und Händler sind nie betroffen.',
-      '**Offline passiert gar nichts:** Der Unterhalt friert bei 0 Gold einfach ein. Abhilfe: Einheiten auflösen, Märkte bauen, [[regel:handel|Handelsrouten]] einrichten.',
+      'Danach wird jede Runde die schwächste Militäreinheit **unterversorgt** (−5 Stärke, heilt nicht). Hält der Mangel lange an, wird die schwächste Militäreinheit aufgelöst. Siedler, Arbeiter, Späher und Händler sind nie betroffen.',
+      'Abhilfe: Einheiten auflösen, Märkte bauen, [[regel:handel|Handelsrouten]] einrichten.',
     ] },
     { id: 'wachstum', titel: 'Städte wachsen', sym: 'bevoelkerung', absaetze: (R) => [
       `Jeder Einwohner isst ${R.NAHRUNG_PRO_EINWOHNER} Nahrung. Was übrig bleibt, wird gesammelt; ist genug da, wächst die Stadt um einen Einwohner. Größere Städte brauchen mehr Nahrung zum Wachsen; die ersten Einwohner kommen dafür besonders schnell.`,
@@ -383,18 +381,12 @@ T.lexikon = {
     { id: 'diplomatie', titel: 'Diplomatie', sym: 'diplomatie', absaetze: (R) => [
       'Im Diplomatie-Fenster (F3) siehst du alle Völker, die du kennst. Die meisten Möglichkeiten schaltest du erst durch Forschung frei:',
       `• **Frieden** gibt es nur, wenn beide zustimmen. Gab es ${Math.round(R.SCHUTZ.friedensvorschlagNach / R.STD)} Stunden lang keinen Kampf, schlägt das Spiel beiden Seiten Frieden vor. • **Offene Grenzen:** Einheiten dürfen das Gebiet des anderen betreten. • **Bündnis:** Ihr teilt eure Sicht. • **Forschungsabkommen:** ${Math.round(R.FORSCHUNGSABKOMMEN.dauer / R.STD)} Stunden lang +${R.FORSCHUNGSABKOMMEN.bonus} % Wissenschaft für beide. • **Tribut:** Schwächere zahlen dir Gold.`,
-      `**Krieg** erklären kannst du einem Spieler nur, wenn er gerade online ist. Danach sind Kämpfe sofort möglich. Deinen eigenen [[regel:neulingsschutz|Neulingsschutz]] verlierst du dabei.`,
-      'KI-Völker greifen Spieler nie von sich aus an. Siehe [[kat:akteur|Völker und Wildnis]].',
+      '**Krieg** erklären kannst du jedem Volk, das du kennst. Danach sind Kämpfe sofort möglich.',
+      'KI-Völker erklären nur dann Krieg, wenn man sie wiederholt verärgert (Truppen im Gebiet, Beleidigungen). Auf **Leicht** beginnt die KI nie einen Krieg, auf **Schwer** und höher tut sie es früher und kämpft aggressiver. Siehe [[kat:akteur|Völker und Wildnis]].',
     ] },
-    { id: 'neulingsschutz', titel: 'Neulingsschutz', sym: 'schild', absaetze: (R) => [
-      `Die ersten **${Math.round(R.SCHUTZ.neulingDauer / R.STD)} Stunden** nach der Gründung deines Volkes bist du geschützt: Kein anderer Spieler kann dich angreifen und du keinen Spieler. **Barbaren ignorieren den Schutz** und können jederzeit kommen, darum solltest du früh ein paar Krieger haben. Barbaren darfst du auch im Schutz bekämpfen.`,
-      'Oben in der Leiste siehst du das Schild-Symbol mit der restlichen Zeit. Erklärst du selbst jemandem den Krieg, endet der Schutz sofort (das Spiel warnt dich vorher).',
-      'Hast du keine Stadt mehr und keinen Siedler, kannst du in den Einstellungen einen **Neuanfang** machen. Dann bekommst du neue Starteinheiten und wieder 24 Stunden Schutz.',
-    ] },
-    { id: 'offline', titel: 'Offline-Schutz und Waffenruhe', sym: 'auge_zu', absaetze: (R) => [
-      '**Wer offline ist und Frieden hat, ist sicher.** Niemand kann deine Städte oder Einheiten beschädigen, nichts wird geplündert, und auch Naturereignisse treffen dich nicht.',
-      `Läuft schon ein **Krieg** und du gehst offline, tritt nach ${Math.round(R.SCHUTZ.waffenruheNach / R.MIN)} Minuten eine **Waffenruhe** ein. Der Krieg ruht dann. Kommst du zurück, gilt nach einer **Schonfrist von ${Math.round(R.SCHUTZ.schonfrist / R.MIN)} Minuten** wieder Krieg.`,
-      `„Online“ heißt: Du hast das Spiel offen oder warst in den letzten ${Math.round(R.SCHUTZ.onlineFenster / R.MIN)} Minuten aktiv.`,
+    { id: 'ki_stufen', titel: 'KI-Schwierigkeit', sym: 'krone', absaetze: (R) => [
+      'Der Host wählt für jedes KI-Volk eine Stufe: **Leicht** (baut und forscht langsamer, beginnt nie einen Krieg), **Normal** (spielt fair) und **Schwer** (kämpft aggressiver, greift früher an).',
+      `Darüber gibt es drei Boni-Stufen, in denen die KI schummelt wie in Civilization: ${R.KI_STUFEN.filter((x) => x.id.startsWith('boni')).map((x) => `**${x.name}** (+${x.bau} % Bautempo, +${x.forschung} % Forschungstempo, +${x.gold} % Gold, +${x.kampf} Kampfstärke)`).join(', ')}.`,
     ] },
     { id: 'stadtstaaten', titel: 'Stadtstaaten', sym: 'tribut', absaetze: (R) => [
       'Stadtstaaten sind neutrale Städte mit einem Schwerpunkt (Handel, Forschung, Militär, Kultur, Seefahrt, Nahrung). Sie greifen niemanden an.',
@@ -402,8 +394,8 @@ T.lexikon = {
       `Einfluss sinkt langsam (${String(R.STADTSTAAT.verfallProStunde).replace('.', ',')} pro Stunde). Klicke auf einen Stadtstaat und wähle „Geschenk machen“. Alle Stadtstaaten: [[kat:akteur|Völker und Wildnis]].`,
     ] },
     { id: 'barbaren', titel: 'Barbaren', sym: 'pluendern', absaetze: () => [
-      'Barbarenlager entstehen an wilden Orten weit weg von Städten. Alle paar Stunden schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
-      'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie **ignorieren den Neulingsschutz** und greifen auch Neulinge an, die gerade online sind. Wer offline ist, bleibt unbehelligt.',
+      'Barbarenlager entstehen an wilden Orten weit weg von Städten. Alle paar Runden schicken sie eine **schwache** Einheit los, die Einheiten angreift oder Verbesserungen plündert.',
+      'Am Anfang sind sie etwas lästig, später kaum noch gefährlich. Sie greifen jedes Volk an, das ihnen in die Quere kommt – schütze deine Grenzen mit ein paar Kriegern.',
       '**Lager zerstören:** Ziehe eine Militäreinheit auf das Lager. Das bringt Gold und Erfahrung.',
     ] },
     { id: 'raubtiere', titel: 'Raubtiere', sym: ['tier', 'wolf'], absaetze: () => [
@@ -412,9 +404,9 @@ T.lexikon = {
       'Du kannst Raubtiere auch selbst angreifen, um den Weg freizumachen.',
     ] },
     { id: 'natur', titel: 'Natur, Wetter und Jahreszeiten', sym: 'regen', absaetze: () => [
-      '**Tag und Nacht** wechseln etwa alle 2 Stunden – nur zur Optik. **Wetter** (Regen, Schnee, Nebel) ist ebenfalls nur Optik. Beides kannst du in den Einstellungen ausschalten.',
-      '**Jahreszeiten** wechseln alle 2 Tage und verändern Aussehen und Erträge ein wenig.',
-      'Selten gibt es **Dürre** (trockene Gegenden) oder **Hochwasser** (an Flüssen). Du wirst 3 Stunden vorher gewarnt; ein paar Stunden lang gibt es dort etwas weniger Nahrung. Nichts wird zerstört.',
+      '**Tag und Nacht** wechseln – nur zur Optik. **Wetter** (Regen, Schnee, Nebel) ist ebenfalls nur Optik. Beides kannst du in den Einstellungen ausschalten.',
+      '**Jahreszeiten** wechseln alle 48 Runden und verändern Aussehen und Erträge ein wenig.',
+      'Selten gibt es **Dürre** (trockene Gegenden) oder **Hochwasser** (an Flüssen). Du wirst ein paar Runden vorher gewarnt; eine Weile gibt es dort etwas weniger Nahrung. Nichts wird zerstört.',
     ] },
     { id: 'wunder', titel: 'Weltwunder', sym: 'wunder', absaetze: () => [
       'Jedes [[kat:wunder|Weltwunder]] gibt es **nur einmal auf der ganzen Welt**. Wer es zuerst fertig baut, bekommt es – mit einem großen Vorteil für das ganze Reich.',
@@ -437,7 +429,7 @@ T.lexikon = {
       '• **Leertaste:** Nächste Aktion • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
     ] },
   ],
-  startRegeln: ['ziel', 'zeit', 'bedienung_maus', 'bedienung_tablet', 'kampf', 'offline'],
+  startRegeln: ['ziel', 'zeit', 'bedienung_maus', 'bedienung_tablet', 'kampf', 'ki_stufen'],
 };
 
 T.hilfe = {
@@ -459,7 +451,7 @@ T.hilfe = {
   maus: 'Maus', touch: 'Tablet', tastatur: 'Tastatur',
   t: {
     gruenden: { titel: 'Gründe deine erste Stadt', text: 'Wähle deinen Siedler und drücke unten „Stadt gründen“. Ein Platz auf Grasland oder Ebene, nahe an Wasser, ist ideal.', knopf: 'Zum Siedler' },
-    neuanfang: { titel: 'Neuanfang', text: 'Du hast keine Stadt und keinen Siedler mehr. In den Einstellungen kannst du neu anfangen – mit neuen Starteinheiten und 24 Stunden Schutz.', knopf: 'Einstellungen' },
+    neuanfang: { titel: 'Dein Volk ist ausgeschieden', text: 'Du hast keine Stadt und keinen Siedler mehr. In dieser Partie bist du raus, du kannst aber jederzeit eine neue starten.', knopf: 'Einstellungen' },
     forschung: { titel: 'Starte eine Forschung', text: 'Gerade forscht dein Volk an nichts. Das ist verschenkte Zeit! Wähle im Forschungsbaum etwas aus.', knopf: 'Forschung wählen' },
     bau: (n, name) => ({ titel: n > 1 ? `${n} Städte ohne Bauauftrag` : `${name} hat keinen Bauauftrag`, text: 'Eine Stadt ohne Auftrag verschenkt Zeit. Am Anfang sind Krieger, Arbeiter, Siedler und ein Kornspeicher gute Wahl.', knopf: 'Bauauftrag wählen' }),
     gold: (rate) => ({ titel: 'Dein Einkommen ist negativ', text: `Du verlierst ${rate} Gold pro Stunde. Löse unnötige Einheiten auf, baue Märkte oder richte Handelsrouten ein.`, knopf: 'Einkommen ansehen' }),
@@ -488,12 +480,12 @@ T.einst = {
   titel: 'Einstellungen', ton: 'Soundeffekte', musik: 'Musik', lautstaerke: 'Lautstärke', tagnacht: 'Tag und Nacht', wetter: 'Wetter (Regen, Schnee, Nebel)',
   tonText: 'Klicks, Kampf, Bau fertig …', musikText: 'Chiptune-Musik, je Zeitalter ein Thema.', tagnachtText: 'Die Karte wird nachts dunkler (nur Optik).', wetterText: 'Regen, Schnee und Nebel auf der Karte (nur Optik).',
   an: 'An', aus: 'Aus', darstellung: 'Darstellung', klang: 'Klang', konto: 'Konto', info: 'Über das Spiel',
-  abmelden: 'Abmelden', abmeldenFrage: 'Wirklich abmelden? Dein Volk bleibt erhalten und ist offline geschützt.',
+  abmelden: 'Abmelden', abmeldenFrage: 'Wirklich abmelden? Deine Partien laufen weiter und warten auf dich.',
   neuanfang: 'Neuanfang', neuanfangText: 'Nur möglich, wenn du keine Stadt und keinen Siedler mehr hast. Du bekommst neue Starteinheiten an einem neuen Ort und 24 Stunden Schutz.',
   neuanfangFrage: 'Wirklich neu anfangen? Deine übrigen Einheiten verschwinden, und dein Volk zieht an einen neuen Ort.', neuanfangGesperrt: 'Du hast noch eine Stadt oder einen Siedler – ein Neuanfang ist nicht nötig.',
   neuanfangOk: 'Dein Volk hat eine neue Heimat gefunden. Gründe mit dem Siedler eine Stadt!',
   gespeichert: 'Gespeichert.', version: 'Version', versionText: 'Alpha 0.1', volk: 'Volk', angemeldet: 'Angemeldet als',
-  infoText: 'Volk ist ein Echtzeit-Aufbauspiel für Familie und Freunde. Musik, Töne und Grafik sind selbst gemacht (per Code erzeugt). Viel Spaß!',
+  infoText: 'Volk ist ein rundenbasiertes Aufbauspiel (wie Civilization) für Familie und Freunde. Musik, Töne und Grafik sind selbst gemacht (per Code erzeugt). Viel Spaß!',
   demo: 'Demo-Modus: Nichts wird gespeichert.', demoVerlassen: 'Demo verlassen',
 };
 
@@ -514,7 +506,7 @@ T.tut = {
     erkundenKnopf: { titel: 'Die Welt erkunden', text: 'Drücke unten „Automatisch erkunden“.' },
     kampf: { titel: 'Kämpfen', text: 'Kämpfe gibt es nur auf deinen Befehl: Rechtsklick (lange drücken) auf einen Gegner. Vorher zeigt die Kampfvorschau beide Stärken, alle Vorteile und den erwarteten Schaden. Achtung vor Barbaren und Raubtieren in der Wildnis – sie sind aber nie sehr stark.' },
     handel: { titel: 'Handel und Diplomatie', text: 'Mit Karawanen richtest du Handelsrouten ein, die dauerhaft Gold bringen. Im Diplomatie-Fenster (F3) schließt du Frieden, Bündnisse und machst Tauschangebote mit anderen Völkern und Stadtstaaten.', knopf: 'Diplomatie öffnen' },
-    schutz: { titel: 'Du bist geschützt', text: 'Die ersten 24 Stunden kann dich niemand angreifen (Neulingsschutz, Schild-Symbol oben). Und: Wer offline ist und Frieden hat, ist immer sicher. Du kannst also beruhigt Pause machen.' },
+    schutz: { titel: 'Zug beenden', text: 'Hast du alles erledigt, drücke unten rechts „Zug beenden“. Dann sind die anderen Völker dran, und die Welt rechnet eine Runde weiter. Nur wer am Zug ist, kann Befehle geben.' },
     hilfe: { titel: 'Hilfe, wenn du sie brauchst', text: 'Der Knopf mit dem Fragezeichen (H) sagt dir jederzeit, was als Nächstes sinnvoll ist. Im Lexikon (F5) steht jede Regel in einfachen Worten.' },
     ende: { titel: 'Viel Spaß!', text: 'Das war das Wichtigste. Tipp: „Nächste Aktion“ (Leertaste) springt immer zu der Einheit oder Stadt, die gerade etwas zu tun braucht. Viel Spaß mit deinem Volk!' },
   },

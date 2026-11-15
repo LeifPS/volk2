@@ -1,53 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { uhr, STD, MIN, speicherAttrappe, socketAttrappe, Spiel } from './hilfen.mjs';
-import { WeltServer } from '../src/server.js';
+import { Spiel, leererZustand } from '../public/shared/engine/spiel.js';
+import { STD, MIN } from './hilfen.mjs';
 import { botMachen, botErweitern } from '../tools/bot.mjs';
 import { EINHEIT } from '../public/shared/daten/index.js';
 import { schichtVon } from '../public/shared/engine/einheiten.js';
 botErweitern(Spiel);
 
-test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren über 2 simulierte Wochen', { timeout: 300000 }, async () => {
-  const sp = speicherAttrappe();
-  let schreibZeilen = 0, schreibVorgaenge = 0;
-  const alt = sp.schreibe; sp.schreibe = (z) => { schreibZeilen += z.size; schreibVorgaenge++; alt(z); };
-  const so = socketAttrappe();
-  const srv = new WeltServer(sp, { __eigeneUhr: true }, so);
-  const sockets = [];
-  for (const [i, name] of ['anna', 'bert', 'carla', 'dieter'].entries()) {
-    const r = await srv.http('/api/registrieren', 'POST', { name, passwort: 'passwort1' }, 'ip' + i);
-    const ws = so.neu(srv.verbindungPruefen(r.token)); srv.verbunden(ws);
-    await srv.nachricht(ws, JSON.stringify({ t: 'volk_gruenden', id: 1, name: name + 'volk', farbe: ['#1010f0', '#ffffff', '#d010f0', '#10b0f0'][i] }));
-    const v = srv.spiel.z.voelker[ws.info.volk];
-    const sied = srv.spiel.einheitenVon(v.id).find((e) => e.typ === 'siedler');
-    await srv.nachricht(ws, JSON.stringify({ t: 'befehl', id: 2, b: { art: 'stadt_gruenden', einheit: sied.id } }));
-    botMachen(srv.spiel, v, ['forscher', 'bauer', 'krieger', 'forscher'][i]);
-    sockets.push(ws);
+test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren über 250 Runden', { timeout: 300000 }, async () => {
+  const T0 = Date.UTC(2026, 0, 5, 12);
+  const s = new Spiel(leererZustand(T0)); s.t = T0;
+  const namen = ['anna', 'bert', 'carla', 'dieter'], farben = ['#1010f0', '#ffffff', '#d010f0', '#10b0f0'];
+  s.partieStarten({ spieler: namen.map((n, i) => ({ konto: n, name: n + 'volk', farbe: farben[i] })), ki: [{ stufe: 'normal' }, { stufe: 'schwer' }], stadtstaaten: 4, zugzeit: { aktiv: true, start: 24 * STD, plus: STD, max: 24 * STD } }, T0);
+  const menschen = s.alleVoelker().filter((v) => v.konto);
+  for (const [i, v] of menschen.entries()) botMachen(s, v, ['forscher', 'bauer', 'krieger', 'forscher'][i]);
+  const RUNDEN = 250;
+  let echt = T0, zuege = 0;
+  while (s.z.global.partie.runde <= RUNDEN && s.z.global.partie.status === 'laeuft') {
+    const dran = s.amZug();
+    assert.ok(dran, 'jemand muss dran sein');
+    const v = s.z.voelker[dran];
+    assert.equal(v.art, 'spieler', 'KI-Züge laufen automatisch, nur Menschen sind „dran“');
+    if (!s.staedteVon(dran).length) { const sied = s.einheitenVon(dran).find((e) => e.typ === 'siedler'); const g = s.befehl(dran, { art: 'stadt_gruenden', einheit: sied.id }, echt); assert.ok(g.ok, g.fehler); }
+    // Mensch gegen Bot-Verstand: Zug denken, dann beenden
+    s.kiDenken(dran); s.botExtras(v);
+    echt += 5 * MIN;
+    const r = s.befehl(dran, { art: 'zug_beenden' }, echt);
+    assert.ok(r.ok, r.fehler);
+    zuege++;
   }
-  let alarme = 0, nachrichten = 0;
-  const startZeilen = schreibZeilen;
-  for (let h = 0; h < 14 * 24; h++) {
-    // nachts sind zwei Spieler offline
-    const stunde = h % 24;
-    for (const [i, ws] of sockets.entries()) {
-      const soll = !(i >= 2 && (stunde < 8 || stunde > 20));
-      const ist = so.liste.includes(ws);
-      if (soll && !ist) { so.liste.push(ws); srv.verbunden(ws); }
-      if (!soll && ist) { so.weg(ws); srv.getrennt(ws); }
-    }
-    // Alarme so wie das Durable Object: immer zum nächsten Ereignis
-    const ende = uhr.jetzt() + STD;
-    for (;;) {
-      const n = srv.spiel.naechsteZeit();
-      if (n == null || n > ende) break;
-      uhr.setze(Math.max(uhr.jetzt(), n)); srv.alarm(); alarme++;
-      if (alarme > 400000) break;
-    }
-    uhr.setze(ende);
-    // ein paar Spielerbefehle (Ping)
-    for (const ws of sockets) if (so.liste.includes(ws)) { await srv.nachricht(ws, JSON.stringify({ t: 'befehl', id: 9, b: { art: 'ping' } })); nachrichten++; }
-  }
-  const s = srv.spiel;
+  assert.ok(s.z.global.partie.runde > RUNDEN || s.z.global.partie.status !== 'laeuft', 'Partie kam voran');
+  const alarme = 0, nachrichten = 0, schreibZeilen = 0, startZeilen = 0;
   assert.deepEqual(s.z.global.fehler || [], []);
   // Konsistenz: Stapelregel, Besitz, gültige Typen
   const belegt = new Map();
@@ -64,12 +47,6 @@ test('Mehrspieler-Simulation: 4 Spieler (Bots) + KI + Stadtstaaten + Barbaren ü
   }
   for (const [i, f] of Object.entries(s.z.felder)) if (f.s) assert.ok(s.z.staedte[f.s]?.gebiet.includes(+i), 'Feld ' + i + ' gehört einer Stadt, die es nicht kennt');
   for (const v of s.alleVoelker()) { assert.ok(v.gold >= 0 && Number.isFinite(v.gold)); for (const x of Object.values(v.lager || {})) assert.ok(x >= -1e-6 && Number.isFinite(x)); }
-  for (const ws of sockets) { const v = s.z.voelker[ws.info.volk]; assert.ok(s.staedteVon(v.id).length >= 2, v.name + ' hat zu wenige Städte'); }
-  // Lastabschätzung (2 Wochen) -> pro Tag
-  const tage = 14;
-  const zeilenProTag = (schreibZeilen - startZeilen) / tage;
-  const anfragenProTag = alarme / tage + nachrichten / 20 / tage;
-  console.log(`Last: ${Math.round(alarme / tage)} Alarme/Tag, ${Math.round(zeilenProTag)} geschriebene Zeilen/Tag, ${Math.round(anfragenProTag)} Anfragen/Tag (ohne echte Klicks), ${sp.m.size} Zeilen gesamt`);
-  assert.ok(anfragenProTag < 20000, 'zu viele Anfragen: ' + anfragenProTag);
-  assert.ok(zeilenProTag < 60000, 'zu viele Schreibzeilen: ' + zeilenProTag);
+  for (const v of s.alleVoelker().filter((x) => x.konto)) assert.ok(s.staedteVon(v.id).length >= 2 || v.ausgeschieden, v.name + ' hat zu wenige Städte');
+  console.log(`Runden: ${s.z.global.partie.runde}, Züge der Menschen: ${zuege}, Städte der Menschen: ${menschen.map((v) => s.staedteVon(v.id).length).join('/')}`);
 });

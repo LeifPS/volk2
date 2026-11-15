@@ -5,10 +5,11 @@
   "type": "module",
   "description": "Volk: Echtzeit-Multiplayer-Aufbaustrategie im Pixelart-Stil",
   "scripts": {
-    "dev": "wrangler dev --var ZEITFAKTOR_ERLAUBT:1",
+    "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "test": "node --test --test-concurrency=4 \"tests/*.test.mjs\"",
     "balance": "node tools/balance-sim.mjs",
+    "balance:runden": "node tools/runden-balance.mjs && node tools/runden-langlauf.mjs 200 normal",
     "browsertest": "node tools/browsertest.mjs"
   },
   "devDependencies": {

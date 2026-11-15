@@ -1,19 +1,21 @@
 # Volk
 
-Echtzeit-Multiplayer-Aufbaustrategie im Pixelart-Stil, für ein paar Freunde und die Familie. Vorbild ist Civilization, aber ohne Runden: Alles läuft in Echtzeit mit Wartezeiten, die Welt läuft weiter, auch wenn niemand online ist.
+Rundenbasierte Aufbaustrategie im Pixelart-Stil, für ein paar Freunde und die Familie: ein Civilization-Klon. Man spielt eine Partie wie ein Brettspiel mit ein paar Menschen und/oder KI-Völkern, reihum Zug für Zug (mit Zugzeit-Konto). Von den anderen sieht man nur „X ist am Zug“.
 
-- Live: https://volk.leifps.workers.dev (ein Push auf `main` deployt per Cloudflare Workers Builds)
-- Demo ohne Server und ohne Konto: https://volk.leifps.workers.dev/?demo=1 (Zeitalter wählbar: `?demo=1&zeitalter=5`)
+**Version 2 (Repo `volk2`)** ersetzt die Echtzeit-Welt von `volk` durch Partien mit Lobby. Siege: Eroberung, Wissenschaft (Fusionsforschung), Punkte beim Rundenlimit. KI-Stufen: Leicht, Normal, Schwer und drei Boni-Stufen.
+
+- Worker-Name `volk2` (nach dem Verbinden des Repos mit Cloudflare Workers Builds deployt jeder Push auf `main`; erwartete Adresse `volk2.<konto>.workers.dev`)
+- Demo ohne Server und ohne Konto: `/?demo=1` (läuft noch im alten Echtzeit-Modus, Zeitalter wählbar: `?demo=1&zeitalter=5`)
 
 ## Aufbau
 
 | Ordner | Inhalt |
 |---|---|
-| `src/` | Worker (`worker.js`), Durable Object `Welt` (`welt.js`), testbare Server-Logik (`server.js`), Konten (`konten.js`) |
+| `src/` | Worker (`worker.js`), Durable Objects `Lobby` (`lobby.js`: Konten, Partien-Liste, Einstellungen) und `Partie` (`server.js`: eine Partie je Objekt, WebSocket, Zugzeit-Alarm), `dos.js`, Konten (`konten.js`) |
 | `public/` | Statische Dateien: `index.html`, `style.css`, Client in `js/`, Schriften |
 | `public/shared/` | Gemeinsamer Code für Client und Server: Hex-Geometrie, Zufall, Karte, Regeln/Formeln, Wegsuche, Uhr `jetzt()` |
 | `public/shared/daten/` | Alle Spielinhalte als Daten (Forschungen, Einheiten, Gebäude, Wunder, Rohstoffe, Gelände, Verbesserungen, Beförderungen, Akteure). Format: `DATENFORMAT.md` |
-| `public/shared/engine/` | Die Spiel-Engine (läuft im Durable Object, in den Tests und im Demo-Modus) |
+| `public/shared/engine/` | Die Spiel-Engine (läuft im Durable Object, in den Tests und im Demo-Modus); `runden.js` enthält Zugreihenfolge, Zugzeit-Konto, Siege, KI-Ersatz |
 | `public/js/grafik/` | Pixel-Sprites, alle im Code gezeichnet |
 | `tests/` | `npm test` (Node-Test-Runner) |
 | `tools/` | Balance-Simulation, Admin-Skript, Sprite-Galerie, Screenshots, Hub-Bilder, Browser-Tests |
@@ -25,26 +27,20 @@ Wichtige Dokumente: `ENTSCHEIDUNGEN.md` (alle Entscheidungen und die Lastabschä
 
 ```
 npm install
-npm run dev          # wrangler dev auf http://localhost:8787, mit Test-Zeitregler
+npm run dev          # wrangler dev auf http://localhost:8787
 npm test             # alle Tests (Karte, Daten, Kampf, Zeit, Server, Balance, Mehrspieler)
-npm run balance      # Balance-Simulation (druckt Tabellen)
+npm run balance      # Balance-Simulation Echtzeit-Modus (druckt Tabellen)
+npm run balance:runden  # Rundenmodus: Dauer in Runden + Langlauf mit KI
 npm run browsertest  # Browser-Läufe mit Playwright gegen wrangler dev
 ```
 
 Sprite-Galerie: einen statischen Server im Repo-Ordner starten (z. B. `python3 -m http.server 8000`) und `http://localhost:8000/tools/sprite-galerie.html` öffnen, oder `node tools/galerie-foto.mjs einheit galerie.png 3`.
 
-## Zeit und der Test-Zeitregler
+## Runden, Zeit und Zugzeit
 
-Jede Zeitabfrage läuft über `jetzt()` in `public/shared/uhr.js`. Tests setzen eine simulierte Uhr (`simulierteUhr()`), damit Stunden und Tage in Sekunden durchlaufen.
+Eine Partie läuft in **Runden**. Im Zug gibt der Spieler Befehle und beendet ihn; KI-Völker ziehen sofort. Sind alle durch, rechnet die Welt `rundeMs` Spielzeit weiter (Spieltempo: Episch 1 Std, Normal 2 Std, Schnell 4 Std, Blitz 8 Std je Runde). In der Spielzeit werden Bauten, Forschungen und Wachstum fertig. Einheiten bewegen sich mit Bewegungspunkten je Runde.
 
-Für Browser-Tests gibt es einen **Test-Zeitregler**, der **nur lokal** funktioniert: `npm run dev` startet `wrangler dev --var ZEITFAKTOR_ERLAUBT:1`. Dann gilt:
-
-```
-curl -X POST localhost:8787/api/dev/zeit -d '{"faktor":60}'          # Spielzeit läuft 60-mal schneller
-curl -X POST localhost:8787/api/dev/zeit -d '{"sprung_ms":3600000}'  # eine Stunde vorspringen
-```
-
-Im Deployment existiert die Variable nicht; der Endpunkt antwortet dann mit 404, und niemand kann die Zeit beeinflussen.
+Das **Zugzeit-Konto** (nur bei mehr als einem Menschen) misst echte Zeit: Standard 24 Std Start, +1 Std je beendetem Zug, höchstens 24 Std; alles vom Host einstellbar. Läuft das Konto im eigenen Zug ab, wird der Zug beendet (Alarm im Durable Object). Wer `verpasstMax` Züge in Folge verpasst, wird durch die KI ersetzt und gilt als verloren. Tests setzen die Zeit direkt (`befehl(vid, b, jetztEcht)`), ein Zeitregler ist nicht mehr nötig.
 
 ## Admin (Passwort zurücksetzen, sperren, löschen, Statistik)
 
@@ -65,4 +61,4 @@ ADMIN_TOKEN=... node tools/admin.mjs loeschen <benutzername>
 2. Optional: `npx wrangler secret put ADMIN_TOKEN`.
 3. Hub-Eintrag: siehe `hub-eintrag/ANLEITUNG.md`.
 
-Spätere Änderungen an der Durable-Object-Klasse brauchen neue Migrations-Tags in `wrangler.jsonc`; die Klasse `Welt` nie umbenennen. Der Spielzustand hat ein Feld `version` für spätere Datenmigrationen.
+Spätere Änderungen an den Durable-Object-Klassen brauchen neue Migrations-Tags in `wrangler.jsonc`; die Klassen `Lobby` und `Partie` nie umbenennen. Der Spielzustand hat ein Feld `version` für spätere Datenmigrationen.

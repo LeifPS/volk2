@@ -71,7 +71,7 @@ const SCHRITTE = [
     ziel: () => (gewaehlt('einheit', istSpaeher) ? aktKnopf(T.befehle.erkunden) : null) },
   { id: 'kampf', ereignis: 'kampf', inhalt: () => S.kampf },
   { id: 'handel', inhalt: () => ({ ...S.handel, aktion: () => F.diplomatie() }), ziel: () => (fensterOffen() ? null : menueKnopf(T.menue.diplomatie)) },
-  { id: 'schutz', inhalt: () => { const rest = (du()?.schutz_bis || 0) - serverJetzt(); return rest > 0 ? { ...S.schutz, text: S.schutz.text + ' ' + TT.schutzRest(dauerText(rest)) } : S.schutz; } },
+  { id: 'schutz', inhalt: () => S.schutz },
   { id: 'hilfe', inhalt: () => S.hilfe, ziel: () => (fensterOffen() ? null : menueKnopf(T.menue.hilfe)) },
   { id: 'ende', inhalt: () => S.ende },
 ];
