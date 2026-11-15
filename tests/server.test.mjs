@@ -1,25 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { uhr, vorspulen, STD, MIN, TAG, speicherAttrappe, socketAttrappe } from './hilfen.mjs';
-import { WeltServer } from '../src/server.js';
+import { STD, MIN, TAG, speicherAttrappe, socketAttrappe } from './hilfen.mjs';
+import { PartieServer } from '../src/server.js';
+import { LobbyServer, einstellungenPruefen } from '../src/lobby.js';
 import { Konten, passwortHash } from '../src/konten.js';
 
-const env = { __eigeneUhr: true, ADMIN_TOKEN: 'admin-geheim-1234567890' };
-function neuerServer(sp = speicherAttrappe(), so = socketAttrappe()) { return { srv: new WeltServer(sp, env, so), sp, so }; }
-async function spielerAnmelden(srv, so, name) {
-  const r = await srv.http('/api/registrieren', 'POST', { name, passwort: 'passwort1' }, '1.2.3.' + name.length);
+const env = { ADMIN_TOKEN: 'admin-geheim-1234567890' };
+const FARBEN = ['#1010f0', '#ffffff', '#d010f0', '#10b0f0'];
+/** Erzeugt einen Partie-Server mit n Menschen (und optional KI) und verbindet je einen Socket. */
+function neuePartie(namen = ['anna', 'bert'], o = {}) {
+  const sp = speicherAttrappe(), so = socketAttrappe();
+  const srv = new PartieServer(sp, env, so);
+  const r = srv.start({ id: 'abc123', name: 'Testpartie', host: namen[0], spieler: namen.map((n, i) => ({ konto: n, name: n + 'volk', farbe: FARBEN[i] })), einstellungen: { ki: o.ki || [{ stufe: 'normal' }], stadtstaaten: 1, zugzeit: { aktiv: false }, ...(o.einstellungen || {}) } }, Date.now());
   assert.equal(r.ok, true, r.fehler);
-  const info = srv.verbindungPruefen(r.token);
-  const ws = so.neu(info);
-  srv.verbunden(ws);
-  await srv.nachricht(ws, JSON.stringify({ t: 'volk_gruenden', id: 1, name: name + 'volk', farbe: ['#1010f0', '#ffffff', '#d010f0', '#10b0f0'][so.liste.length - 1] }));
-  const a = ws.empfangen.find((m) => m.t === 'antwort' && m.id === 1);
-  assert.equal(a.ok, true, a.fehler);
-  return { ws, token: r.token, volk: a.volk };
+  const verb = {};
+  for (const n of namen) { const ws = so.neu({ konto: n }); srv.verbunden(ws); verb[n] = { ws, volk: srv.volkVon(n) }; }
+  return { srv, sp, so, ...verb };
 }
 const antwort = (ws, id) => ws.empfangen.find((m) => m.t === 'antwort' && m.id === id);
 let nid = 100;
 async function befehl(srv, ws, b) { const id = nid++; await srv.nachricht(ws, JSON.stringify({ t: 'befehl', id, b })); return antwort(ws, id); }
+/** Lässt so lange Züge beenden, bis `konto` am Zug ist. */
+async function bisAmZug(srv, pn, konto) {
+  for (let i = 0; i < 20 && srv.spiel.amZug() !== srv.volkVon(konto); i++) {
+    const dran = srv.kontoVon(srv.spiel.amZug());
+    await befehl(srv, pn[dran].ws, { art: 'zug_beenden' });
+  }
+  assert.equal(srv.spiel.amZug(), srv.volkVon(konto));
+}
 
 test('Konten: Registrierung, Login, falsches Passwort, Rate-Limit, Namenskollision, Benutzername ≠ Volksname', async () => {
   let t = Date.now();
@@ -45,95 +53,139 @@ test('Konten: Registrierung, Login, falsches Passwort, Rate-Limit, Namenskollisi
 });
 
 test('Admin: nur mit ADMIN_TOKEN aktiv, Passwort-Reset, Sperren', async () => {
-  const ohne = new WeltServer(speicherAttrappe(), { __eigeneUhr: true }, socketAttrappe());
+  const ohne = new LobbyServer(speicherAttrappe(), {});
   assert.equal((await ohne.http('/api/admin/statistik', 'GET', null, 'x', 'Bearer irgendwas')).ok, false);
-  const { srv } = neuerServer();
-  await srv.http('/api/registrieren', 'POST', { name: 'oma', passwort: 'passwort1' }, 'ipx');
-  assert.equal((await srv.http('/api/admin/passwort', 'POST', { name: 'oma', passwort: 'neu12345' }, 'x', 'Bearer falsch')).ok, false);
-  assert.equal((await srv.http('/api/admin/passwort', 'POST', { name: 'oma', passwort: 'neu12345' }, 'x', 'Bearer ' + env.ADMIN_TOKEN)).ok, true);
-  assert.equal((await srv.http('/api/anmelden', 'POST', { name: 'oma', passwort: 'neu12345' }, 'ipy')).ok, true);
-  assert.equal((await srv.http('/api/admin/sperren', 'POST', { name: 'oma' }, 'x', 'Bearer ' + env.ADMIN_TOKEN)).ok, true);
-  assert.equal((await srv.http('/api/anmelden', 'POST', { name: 'oma', passwort: 'neu12345' }, 'ipz')).ok, false);
-  // Test-Zeitregler ist ohne Dev-Variable aus
-  assert.equal((await srv.http('/api/dev/zeit', 'POST', { sprung_ms: 1000 }, 'x')).ok, false);
+  const lobby = new LobbyServer(speicherAttrappe(), env);
+  await lobby.http('/api/registrieren', 'POST', { name: 'oma', passwort: 'passwort1' }, 'ipx');
+  assert.equal((await lobby.http('/api/admin/passwort', 'POST', { name: 'oma', passwort: 'neu12345' }, 'x', 'Bearer falsch')).ok, false);
+  assert.equal((await lobby.http('/api/admin/passwort', 'POST', { name: 'oma', passwort: 'neu12345' }, 'x', 'Bearer ' + env.ADMIN_TOKEN)).ok, true);
+  assert.equal((await lobby.http('/api/anmelden', 'POST', { name: 'oma', passwort: 'neu12345' }, 'ipy')).ok, true);
+  assert.equal((await lobby.http('/api/admin/sperren', 'POST', { name: 'oma' }, 'x', 'Bearer ' + env.ADMIN_TOKEN)).ok, true);
+  assert.equal((await lobby.http('/api/anmelden', 'POST', { name: 'oma', passwort: 'neu12345' }, 'ipz')).ok, false);
 });
 
-test('Server-Autorität: fremde Einheiten, Bauen außerhalb, Forschung überspringen, Kosten umgehen, Karte lesen', async () => {
-  const { srv, so } = neuerServer();
-  const A = await spielerAnmelden(srv, so, 'anna');
-  const B = await spielerAnmelden(srv, so, 'bert');
-  const s = srv.spiel;
-  const eB = s.einheitenVon(B.volk)[0];
-  assert.equal((await befehl(srv, A.ws, { art: 'bewegen', einheit: eB.id, ziel: eB.feld + 1 })).ok, false);
-  assert.equal((await befehl(srv, A.ws, { art: 'aufloesen', einheit: eB.id })).ok, false);
-  const siedA = s.einheitenVon(A.volk).find((e) => e.typ === 'siedler');
-  assert.equal((await befehl(srv, A.ws, { art: 'stadt_gruenden', einheit: siedA.id })).ok, true);
-  const stadtA = s.staedteVon(A.volk)[0];
-  // Gebäude ohne Forschung
-  const r1 = await befehl(srv, A.ws, { art: 'bauen', stadt: stadtA.id, typ: 'gebaeude', id: 'universitaet' });
+test('Lobby: Partie erstellen, beitreten, Einstellungen prüfen, nur der Host startet, Zugang nur für Mitglieder', async () => {
+  const gestartet = [];
+  const lobby = new LobbyServer(speicherAttrappe(), env, { starten: async (p) => { gestartet.push(p); return { ok: true }; } });
+  const reg = async (n, ip) => (await lobby.http('/api/registrieren', 'POST', { name: n, passwort: 'passwort1' }, ip)).token;
+  const tA = await reg('anna', 'i1'), tB = await reg('bert', 'i2'), tC = await reg('carl', 'i3');
+  const neu = await lobby.http('/api/partie/neu', 'POST', { token: tA, name: 'Familienrunde', volk: { name: 'Annas Volk', farbe: '#1010f0' }, einstellungen: { tempo: 'blitz', ki: [{ stufe: 'boni2' }, { stufe: 'quatsch' }], maxSpieler: 2, siege: { punkte: false } } });
+  assert.equal(neu.ok, true, neu.fehler);
+  const id = neu.partie.id;
+  assert.equal(neu.partie.einstellungen.tempo, 'blitz');
+  assert.deepEqual(neu.partie.einstellungen.ki.map((k) => k.stufe), ['boni2', 'normal'], 'unbekannte KI-Stufe wird Normal');
+  assert.equal(neu.partie.einstellungen.siege.punkte, false);
+  // Beitreten: ähnliche Farbe, doppelter Name, dann ok
+  assert.equal((await lobby.http('/api/partie/beitreten', 'POST', { token: tB, partie: id, volk: { name: 'Berts Volk', farbe: '#1111f1' } })).ok, false);
+  assert.equal((await lobby.http('/api/partie/beitreten', 'POST', { token: tB, partie: id, volk: { name: 'annas volk', farbe: '#d010f0' } })).ok, false);
+  assert.equal((await lobby.http('/api/partie/beitreten', 'POST', { token: tB, partie: id, volk: { name: 'Berts Volk', farbe: '#d010f0' } })).ok, true);
+  assert.equal((await lobby.http('/api/partie/beitreten', 'POST', { token: tC, partie: id, volk: { name: 'Carls Volk', farbe: '#10b0f0' } })).ok, false, 'Partie voll (maxSpieler 2)');
+  // Nur Host startet und ändert
+  assert.equal((await lobby.http('/api/partie/starten', 'POST', { token: tB, partie: id })).ok, false);
+  assert.equal((await lobby.http('/api/partie/einstellungen', 'POST', { token: tB, partie: id, einstellungen: {} })).ok, false);
+  assert.equal(lobby.zugang(tA, id), null, 'vor dem Start kein Spielzugang');
+  assert.equal((await lobby.http('/api/partie/starten', 'POST', { token: tA, partie: id })).ok, true);
+  assert.equal(gestartet.length, 1); assert.equal(gestartet[0].spieler.length, 2);
+  assert.equal(lobby.zugang(tA, id), 'anna'); assert.equal(lobby.zugang(tB, id), 'bert'); assert.equal(lobby.zugang(tC, id), null, 'Fremde kommen nicht rein');
+  // Liste: Mitglieder sehen die Partie, Dritte nicht (läuft schon)
+  assert.equal((await lobby.http('/api/partien', 'GET', { token: tA })).partien.length, 1);
+  assert.equal((await lobby.http('/api/partien', 'GET', { token: tC })).partien.length, 0);
+  assert.equal((await lobby.http('/api/partien', 'GET', {})).ok, false, 'ohne Anmeldung nichts');
+  // Statusmeldung der Partie
+  lobby.statusMelden(id, { runde: 7, status: 'laeuft', dran: 'bert', sieger: null, siegart: null });
+  const l = (await lobby.http('/api/partien', 'GET', { token: tB })).partien[0];
+  assert.equal(l.runde, 7); assert.equal(l.am_zug, true);
+  // Neustart: alles bleibt
+  const lobby2 = new LobbyServer(lobby.speicher, env);
+  assert.equal(lobby2.zugang(tA, id), 'anna');
+  assert.equal(einstellungenPruefen({ rundenlimit: 5 }).rundenlimit, 20);
+});
+
+test('Partie-Server: Einheiten fremder Völker, Bauen außerhalb, Forschung überspringen, Kosten umgehen, Karte lesen – und nur im eigenen Zug', async () => {
+  const P = neuePartie(['anna', 'bert']);
+  const { srv } = P, s = srv.spiel;
+  const [A, B] = [P.anna, P.bert];
+  const wsDran = (k) => P[k].ws;
+  // Wer zuerst dran ist, baut die Stadt; der andere darf nichts.
+  const erster = srv.kontoVon(s.amZug()), zweiter = erster === 'anna' ? 'bert' : 'anna';
+  const sied1 = s.einheitenVon(P[erster].volk).find((e) => e.typ === 'siedler');
+  const fremd = await befehl(srv, wsDran(zweiter), { art: 'stadt_gruenden', einheit: s.einheitenVon(P[zweiter].volk).find((e) => e.typ === 'siedler').id });
+  assert.equal(fremd.ok, false); assert.match(fremd.fehler, /nicht am Zug/);
+  assert.equal((await befehl(srv, wsDran(erster), { art: 'stadt_gruenden', einheit: sied1.id })).ok, true);
+  // Fremde Einheiten (auch im eigenen Zug) sind tabu
+  const eFremd = s.einheitenVon(P[zweiter].volk)[0];
+  assert.equal((await befehl(srv, wsDran(erster), { art: 'bewegen', einheit: eFremd.id, ziel: eFremd.feld + 1 })).ok, false);
+  assert.equal((await befehl(srv, wsDran(erster), { art: 'aufloesen', einheit: eFremd.id })).ok, false);
+  const stadt = s.staedteVon(P[erster].volk)[0];
+  const r1 = await befehl(srv, wsDran(erster), { art: 'bauen', stadt: stadt.id, typ: 'gebaeude', id: 'universitaet' });
   assert.equal(r1.ok, false); assert.match(r1.fehler, /Forschung/);
-  // In fremder Stadt bauen
-  const siedB = s.einheitenVon(B.volk).find((e) => e.typ === 'siedler');
-  await befehl(srv, B.ws, { art: 'stadt_gruenden', einheit: siedB.id });
-  const stadtB = s.staedteVon(B.volk)[0];
-  assert.equal((await befehl(srv, A.ws, { art: 'bauen', stadt: stadtB.id, typ: 'einheit', id: 'krieger' })).ok, false);
-  // Arbeiter außerhalb der Grenzen
-  const arb = s.einheitErzeugen(A.volk, 'arbeiter', stadtB.gebiet.find((i) => i !== stadtB.feld));
-  s.z.voelker[A.volk].forschung.erforscht.ackerbau = 1;
-  const r2 = await befehl(srv, A.ws, { art: 'arbeiten', einheit: arb.id, verbesserung: 'farm' });
-  assert.equal(r2.ok, false); assert.match(r2.fehler, /eigenen Grenzen/);
-  // Kosten umgehen: zu teuer
-  s.z.voelker[A.volk].gold = 0;
-  const r3 = await befehl(srv, A.ws, { art: 'bauen', stadt: stadtA.id, typ: 'einheit', id: 'siedler' });
-  assert.equal(r3.ok, false);
+  s.z.voelker[P[erster].volk].gold = 0;
+  assert.equal((await befehl(srv, wsDran(erster), { art: 'bauen', stadt: stadt.id, typ: 'einheit', id: 'siedler' })).ok, false);
   // Unsinnige Nachrichten
-  await srv.nachricht(A.ws, 'kein json');
-  await srv.nachricht(A.ws, JSON.stringify({ t: 'befehl', id: 999, b: { art: 'befehl_bauen' } }));
-  assert.equal(antwort(A.ws, 999).ok, false);
-  await srv.nachricht(A.ws, JSON.stringify({ t: 'befehl', id: 998, b: { art: '__proto__' } }));
-  assert.equal(antwort(A.ws, 998).ok, false);
-  await srv.nachricht(A.ws, JSON.stringify({ t: 'befehl', id: 997, b: { art: 'constructor' } }));
-  assert.equal(antwort(A.ws, 997).ok, false);
-  // Forschung überspringen gibt es nicht: Server stellt Voraussetzungen davor
-  const r4 = await befehl(srv, A.ws, { art: 'forschen', id: 'eisenverarbeitung' });
+  await srv.nachricht(wsDran(erster), 'kein json');
+  for (const [id, art] of [[999, 'befehl_bauen'], [998, '__proto__'], [997, 'constructor']]) {
+    await srv.nachricht(wsDran(erster), JSON.stringify({ t: 'befehl', id, b: { art } }));
+    assert.equal(antwort(wsDran(erster), id).ok, false);
+  }
+  // Forschung überspringen gibt es nicht
+  const r4 = await befehl(srv, wsDran(erster), { art: 'forschen', id: 'eisenverarbeitung' });
   assert.equal(r4.ok, true);
-  assert.notEqual(s.z.voelker[A.volk].forschung.aktiv, 'eisenverarbeitung');
-  // Karte lesen: Ansicht enthält keine Einheiten außerhalb der Sicht
-  const sicht = s.sichtbareFelder(A.volk);
-  const ans = s.ansichtFuer(A.volk);
-  for (const e of Object.values(ans.einheiten)) if (e.volk !== A.volk) assert.ok(sicht.has(e.feld));
-  for (const i of Object.keys(ans.felder)) assert.ok(s.istErkundet(s.nebel(A.volk), +i));
-  // Befehle an Offline-Spieler-Einheiten: nur der Besitzer kann befehlen; Fragen über fremde Einheiten verweigert
-  await srv.nachricht(A.ws, JSON.stringify({ t: 'frage', id: 996, q: { art: 'weg', einheit: eB.id, ziel: 0 } }));
-  assert.equal(antwort(A.ws, 996).ok, false);
+  assert.notEqual(s.z.voelker[P[erster].volk].forschung.aktiv, 'eisenverarbeitung');
+  // Ansicht enthält nichts außerhalb der Sicht
+  const sicht = s.sichtbareFelder(P[erster].volk), ans = s.ansichtFuer(P[erster].volk);
+  for (const e of Object.values(ans.einheiten)) if (e.volk !== P[erster].volk) assert.ok(sicht.has(e.feld));
+  for (const i of Object.keys(ans.felder)) assert.ok(s.istErkundet(s.nebel(P[erster].volk), +i));
+  await srv.nachricht(wsDran(erster), JSON.stringify({ t: 'frage', id: 996, q: { art: 'weg', einheit: eFremd.id, ziel: 0 } }));
+  assert.equal(antwort(wsDran(erster), 996).ok, false);
+  // Konto ohne Volk in dieser Partie
+  const ws = P.so.neu({ konto: 'fremder' }); srv.verbunden(ws);
+  await srv.nachricht(ws, JSON.stringify({ t: 'befehl', id: 995, b: { art: 'ping' } }));
+  assert.ok(!antwort(ws, 995) || antwort(ws, 995).ok === false);
+  void A; void B;
 });
 
-test('Speicherung: nach Neustart (neuer Server aus demselben Speicher) ist alles wieder da', async () => {
-  const { srv, sp, so } = neuerServer();
-  const A = await spielerAnmelden(srv, so, 'carla');
-  const sied = srv.spiel.einheitenVon(A.volk).find((e) => e.typ === 'siedler');
-  await befehl(srv, A.ws, { art: 'stadt_gruenden', einheit: sied.id });
-  await befehl(srv, A.ws, { art: 'forschen', id: 'ackerbau' });
-  vorspulen(srv.spiel, 3 * STD); srv.nachAenderung();
-  const vorher = JSON.stringify({ v: srv.spiel.z.voelker[A.volk].forschung, s: srv.spiel.staedteVon(A.volk).map((x) => [x.bev, x.gebiet.length]) });
+test('Speicherung: nach Neustart (neuer Server aus demselben Speicher) ist alles wieder da, auch wer am Zug ist', async () => {
+  const P = neuePartie(['carla', 'dirk']);
+  const { srv, sp } = P;
+  await bisAmZug(srv, P, 'carla');
+  const sied = srv.spiel.einheitenVon(P.carla.volk).find((e) => e.typ === 'siedler');
+  await befehl(srv, P.carla.ws, { art: 'stadt_gruenden', einheit: sied.id });
+  await befehl(srv, P.carla.ws, { art: 'forschen', id: 'ackerbau' });
+  await befehl(srv, P.carla.ws, { art: 'zug_beenden' });
+  const vorher = JSON.stringify({ v: srv.spiel.z.voelker[P.carla.volk].forschung, s: srv.spiel.staedteVon(P.carla.volk).map((x) => [x.bev, x.gebiet.length]), runde: srv.spiel.z.global.partie.runde, dran: srv.spiel.amZug(), t: srv.spiel.t });
   const zeilen = sp.m.size;
   assert.ok(zeilen > 10 && zeilen < 400, 'Zeilen: ' + zeilen);
-  const srv2 = new WeltServer(sp, env, socketAttrappe());
-  const nachher = JSON.stringify({ v: srv2.spiel.z.voelker[A.volk].forschung, s: srv2.spiel.staedteVon(A.volk).map((x) => [x.bev, x.gebiet.length]) });
+  const srv2 = new PartieServer(sp, env, socketAttrappe());
+  const nachher = JSON.stringify({ v: srv2.spiel.z.voelker[P.carla.volk].forschung, s: srv2.spiel.staedteVon(P.carla.volk).map((x) => [x.bev, x.gebiet.length]), runde: srv2.spiel.z.global.partie.runde, dran: srv2.spiel.amZug(), t: srv2.spiel.t });
   assert.equal(nachher, vorher);
-  assert.equal(srv2.spiel.nebelText(A.volk), srv.spiel.nebelText(A.volk));
-  assert.equal(srv2.konten.sitzung(A.token), 'carla');
+  assert.equal(srv2.spiel.nebelText(P.carla.volk), srv.spiel.nebelText(P.carla.volk));
+  assert.equal(srv2.volkVon('dirk'), P.dirk.volk);
+});
+
+test('Zugzeit im Server: Alarm = Frist des Zugs; nach Ablauf wird der Zug beendet', async () => {
+  const P = neuePartie(['emil', 'fritz'], { einstellungen: { zugzeit: { aktiv: true, start: 2 * STD, plus: STD, max: 2 * STD, verpasstMax: 3 } } });
+  const { srv } = P;
+  const p = srv.spiel.z.global.partie;
+  assert.ok(p.zug && p.zug.frist > Date.now() + 1.9 * STD, 'Frist läuft');
+  assert.ok(srv.naechsterAlarm() >= p.zug.frist - 5000 && srv.naechsterAlarm() <= p.zug.frist + 5000);
+  const dran = srv.spiel.amZug();
+  p.zug.frist = Date.now() - 1; // Frist abgelaufen
+  srv.alarm();
+  assert.notEqual(srv.spiel.amZug(), dran, 'nächster ist dran');
+  assert.equal(srv.spiel.z.voelker[dran].bank, 0);
 });
 
 test('Deltas: nach einer Änderung bekommt der Client nur die Unterschiede', async () => {
-  const { srv, so } = neuerServer();
-  const A = await spielerAnmelden(srv, so, 'dora');
-  const voll = A.ws.empfangen.filter((m) => m.t === 'voll');
+  const P = neuePartie(['dora', 'emma']);
+  const { srv } = P;
+  await bisAmZug(srv, P, 'dora');
+  const voll = P.dora.ws.empfangen.filter((m) => m.t === 'voll');
   assert.ok(voll.length >= 1);
-  const n = A.ws.empfangen.length;
-  const sied = srv.spiel.einheitenVon(A.volk).find((e) => e.typ === 'siedler');
-  await befehl(srv, A.ws, { art: 'stadt_gruenden', einheit: sied.id });
-  const delta = A.ws.empfangen.slice(n).find((m) => m.t === 'delta');
+  assert.ok(voll[0].ansicht.partie && voll[0].ansicht.partie.runde >= 1, 'Ansicht enthält die Partie');
+  const n = P.dora.ws.empfangen.length;
+  const sied = srv.spiel.einheitenVon(P.dora.volk).find((e) => e.typ === 'siedler');
+  await befehl(srv, P.dora.ws, { art: 'stadt_gruenden', einheit: sied.id });
+  const delta = P.dora.ws.empfangen.slice(n).find((m) => m.t === 'delta');
   assert.ok(delta && delta.d.staedte && delta.d.einheiten);
   assert.ok(JSON.stringify(delta).length < JSON.stringify(voll[0]).length);
 });

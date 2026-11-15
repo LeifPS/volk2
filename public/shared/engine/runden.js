@@ -185,8 +185,11 @@ export const runden = {
   /** Alle Völker waren dran: Die Spielzeit springt eine Runde weiter, die Welt lebt (Wirtschaft, Barbaren, Tiere, Natur). */
   rundeWeiter() {
     const p = this.z.global.partie;
-    for (const v of this.alleVoelker()) if (!p.reihe.includes(v.id)) for (const e of this.einheitenVon(v.id)) e.mp = this.mpMax(e);
+    const fremde = () => this.alleEinheiten().filter((e) => !p.reihe.includes(e.volk));
+    for (const e of fremde()) e.mp = this.mpMax(e);
+    for (const e of fremde()) if (e.pfad?.length) this.bewegungAusfuehren(e);
     this.verarbeite(this.t + p.rundeMs);
+    for (const e of fremde()) { e.mp = this.mpMax(e); if (e.pfad?.length) this.bewegungAusfuehren(e); }
     p.runde++;
     this.markiere('g');
     if (p.rundenlimit && p.runde > p.rundenlimit && p.siege.punkte) this.partieBeenden('punkte', this.punkteSieger());

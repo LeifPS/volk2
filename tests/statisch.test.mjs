@@ -57,7 +57,7 @@ test('Statische Dateien: alle Verweise in index.html existieren, wrangler.jsonc 
   assert.ok(html.indexOf('lgh-vorlade.js') < html.indexOf('<meta charset') + 200);
   const w = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8').replace(/\/\/.*$/gm, ''));
   assert.equal(w.name, 'volk2'); assert.equal(w.main, './src/worker.js');
-  assert.equal(w.durable_objects.bindings[0].class_name, 'Welt');
+  assert.deepEqual(w.durable_objects.bindings.map((b) => b.class_name), ['Lobby', 'Partie']);
   assert.ok(fs.existsSync('public/favicon.svg'));
 });
 
