@@ -3,7 +3,8 @@
 import { el, symbol, fenster, fehler, toast, zahl, dauerText, balken, tip } from './basis.js';
 import { sprite } from '../grafik/sprites.js';
 import { T } from '../texte.js';
-import { an, du, forschungsFortschritt, serverJetzt } from '../kern/zustand.js';
+import { an, du, forschungsFortschritt, serverJetzt, partie } from '../kern/zustand.js';
+import { rundenDauerMs, RUNDEN_DAUER, forschungsTempo } from '../../shared/regeln.js';
 import { befehl } from '../kern/netz.js';
 import { FORSCHUNGEN, FORSCHUNG, NACHFOLGER, EINHEIT, GEB, WUNDER_NACH_ID, VERBESSERUNG, ROHSTOFF, ZEITALTER } from '../../shared/daten/index.js';
 import { SPALTEN_ZEITALTER } from '../../shared/daten/forschung.js';
@@ -141,6 +142,7 @@ const erforscht = () => du()?.forschung?.erforscht || {};
 function dauerMs(f) {
   let d = f.dauer;
   if (f.wiederholbar) d *= 1 + 0.15 * (erforscht()[f.id] || 0);
+  if (partie()) return rundenDauerMs(d, RUNDEN_DAUER.forschungFaktor) / forschungsTempo(wissenschaft());
   return d * 1000 / (1 + Math.max(0, wissenschaft()) / 100);
 }
 /** Restdauer in ms (berücksichtigt aktive Forschung und Teilfortschritt). */

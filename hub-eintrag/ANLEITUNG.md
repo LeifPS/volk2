@@ -3,7 +3,7 @@
 Alles in diesem Ordner ist fertig vorbereitet. Ausnahme: das Banner (siehe Schritt 1).
 
 ## 1. Banner erzeugen (einmalig)
-1. Den Text-Prompt aus `banner-prompt.md` in Gemini einfügen und ein Bild erzeugen.
+1. Den Text-Prompt aus `banner-prompt.md` in Gemini einfügen (Spiel ist jetzt rundenbasiert, im Prompt „Echtzeit“ weglassen) und ein Bild erzeugen.
 2. Das Bild hierher holen und zuschneiden: `python3 tools/banner-zuschneiden.py ~/Downloads/<bild>.png hub-eintrag/volk-wallpaper.webp`. Das Ergebnis hat 2000 × 400 Pixel und ist WebP. Pillow wird gebraucht: `pip3 install pillow`.
 
 ## 2. Dateien in das Hub-Repo kopieren

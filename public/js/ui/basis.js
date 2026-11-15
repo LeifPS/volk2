@@ -149,6 +149,8 @@ export function dauerText(ms, echt = false) {
 }
 /** Uhrzeit (lokal) eines Server-Zeitpunkts, mit Tag, falls nicht heute. */
 export function uhrzeit(t) {
+  const pa = partieInfo?.();
+  if (pa && pa.t != null) return 'Runde ' + (pa.runde + Math.max(1, Math.ceil((t - pa.t) / pa.rundeMs - 1e-9)));
   const d = new Date(t), h = new Date();
   const z = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   if (d.toDateString() === h.toDateString()) return z + ' Uhr';

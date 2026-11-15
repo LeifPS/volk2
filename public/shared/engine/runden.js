@@ -270,7 +270,7 @@ export const runden = {
     const dran = p.status === 'laeuft' ? p.reihe[p.dran] : null;
     const volk = (id) => { const v = this.z.voelker[id]; return v ? { id, name: v.name, farbe: v.farbe, art: v.art, mensch: !!v.konto, ausgeschieden: v.ausgeschieden || 0, bank: p.zeit.aktiv && v.konto ? v.bank : null, verpasst: v.verpasst || 0, verbunden: v.verbunden > 0 } : null; };
     return {
-      runde: p.runde, status: p.status, sieger: p.sieger, siegart: p.siegart, rundenlimit: p.rundenlimit, tempo: p.tempo, rundeMs: p.rundeMs,
+      runde: p.runde, t: this.t, status: p.status, sieger: p.sieger, siegart: p.siegart, rundenlimit: p.rundenlimit, tempo: p.tempo, rundeMs: p.rundeMs,
       dran, frist: p.zug?.frist ?? null, zug_start: p.zug?.start ?? null, zeit: p.zeit, siege: p.siege,
       reihe: p.reihe.map(volk).filter(Boolean),
     };
