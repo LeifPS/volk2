@@ -2,7 +2,7 @@
 import { karte, startWert } from '../karte.js';
 import { ANZAHL, abstand, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
-import { KI_VOELKER, STADTSTAATEN, STARTFORSCHUNGEN, FORSCHUNG } from '../daten/index.js';
+import { KI_VOELKER, STADTSTAATEN, STARTFORSCHUNGEN, FORSCHUNG, POLITIK, politikPlaetze } from '../daten/index.js';
 import { START_LAGER, SCHUTZ, STD, MIN, TAG } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 
@@ -154,6 +154,16 @@ export const start = {
     this.markiere('v' + v.id);
   },
   befehl_meldungen_gelesen(v, b) { v.gelesen_bis = Math.max(v.gelesen_bis || 0, +b.bis || 0); this.markiere('v' + v.id); },
+  befehl_politik_waehlen(v, b) {
+    pruefe(POLITIK[b.id], 'Unbekannte Sozialpolitik.');
+    v.politiken = v.politiken || [];
+    pruefe(!v.politiken.includes(b.id), 'Diese Politik hast du schon.');
+    pruefe(politikPlaetze(v.kultur_gesamt || 0, v.politiken.length) > 0, 'Dir fehlt noch Kultur für eine weitere Politik.');
+    this.aendern(v.id);
+    v.politiken.push(b.id);
+    delete this._raten[v.id];
+    this.markiere('v' + v.id);
+  },
   befehl_ping() {},
   befehl_einstellungen(v, b) {
     const e = b.werte && typeof b.werte === 'object' ? b.werte : {};

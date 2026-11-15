@@ -3,7 +3,7 @@
 import { karte, startWert, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
-import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG } from '../daten/index.js';
+import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG, POLITIKEN, politikPlaetze } from '../daten/index.js';
 import { STD, MIN, TAG, KAMPF, kiBoni } from '../regeln.js';
 import { bereichVon, istMilitaer, schichtVon } from './einheiten.js';
 import { SpielFehler } from './spiel.js';
@@ -33,12 +33,26 @@ export const akteure = {
     this.markiere('v' + vid);
     try {
       this.kiForschung(v);
+      if (v.art === 'ki') this.kiPolitik(v);
       for (const s of this.staedteVon(vid)) this.kiStadt(v, s);
       this.kiEinheiten(v);
       if (v.art === 'ki') this.kiDiplomatie(v);
       if (v.ki.bot) this.botExtras?.(v);
     } catch (e) {
       if (!(e instanceof SpielFehler)) this.fehlerProtokoll('KI ' + v.name + ': ' + (e.stack || e));
+    }
+  },
+
+  /** Die KI wählt freie Sozialpolitiken passend zur Persönlichkeit. */
+  kiPolitik(v) {
+    while (politikPlaetze(v.kultur_gesamt || 0, (v.politiken || []).length) > 0) {
+      const vorliebe = { krieger: 'ehre', seefahrer: 'ehre', forscher: 'freiheit', haendler: 'freiheit', bauer: 'tradition' }[v.ki.persoenlichkeit] || 'tradition';
+      const frei = POLITIKEN.filter((p) => !(v.politiken || []).includes(p.id));
+      if (!frei.length) return;
+      const pass = frei.filter((p) => p.kategorie === vorliebe);
+      const wahl = (pass.length ? pass : frei)[0];
+      (v.politiken = v.politiken || []).push(wahl.id);
+      this.markiere('v' + v.id);
     }
   },
 

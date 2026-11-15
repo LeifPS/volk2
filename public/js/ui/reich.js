@@ -1,8 +1,9 @@
 // Reichsübersicht: Städte, Einheiten, Wirtschaft (Einkommen, Lager, Luxus, Handel, Boni) und Weltwunder.
-import { el as basisEl, symbol, fenster, zahl, vorzeichen, dauerText, uhrzeit, balken } from './basis.js';
+import { el as basisEl, symbol, fenster, fehler, zahl, vorzeichen, dauerText, uhrzeit, balken } from './basis.js';
 import { T } from '../texte.js';
 import { Z, an, du, volk, stadt as stadtVon, eigeneStaedte, eigeneEinheiten, aktuellesFeld, aktuelleHp, aktuellesGold, aktuellesLager, serverJetzt } from '../kern/zustand.js';
-import { EINHEIT, VERBESSERUNG, ROHSTOFF, WUNDER, ZEITALTER } from '../../shared/daten/index.js';
+import { EINHEIT, VERBESSERUNG, ROHSTOFF, WUNDER, ZEITALTER, POLITIKEN, POLITIK_KATEGORIEN } from '../../shared/daten/index.js';
+import { befehl } from '../kern/netz.js';
 import { LAGERGUETER, LAGER_NAMEN } from '../../shared/daten/rohstoffe.js';
 import { abstand, xVon, yVon } from '../../shared/hex.js';
 import { freieEinheiten } from '../../shared/regeln.js';
@@ -22,7 +23,7 @@ function el(tag, attr, ...kinder) {
 
 
 const R = () => T.reich;
-const REITER = ['staedte', 'einheiten', 'wirtschaft', 'wunder'];
+const REITER = ['staedte', 'einheiten', 'wirtschaft', 'politik', 'wunder'];
 const z1 = (x) => zahl(x, Math.abs(x) < 10 && Math.round(x) !== x ? 1 : 0);
 
 let stilDa = false;
@@ -75,6 +76,7 @@ function schluessel() {
   if (r === 'staedte') return JSON.stringify(eigeneStaedte());
   if (r === 'einheiten') return JSON.stringify(eigeneEinheiten());
   if (r === 'wunder') return JSON.stringify([a.wunder, a.welt?.im_bau]);
+  if (r === 'politik') return JSON.stringify([du().politiken, du().politik_plaetze, du().kultur_gesamt]);
   const d = du(); return JSON.stringify([d.raten, d.lager, d.routen, d.routenKapazitaet]);
 }
 
@@ -82,10 +84,10 @@ function zeichne() {
   const z = offen; if (!z || !Z.ansicht) return;
   z.schl = schluessel(); z.live = [];
   const f = z.f, scroll = f.inhalt.scrollTop;
-  const reiter = el('div.reiter.re-reiter', REITER.map((r) => el('button.knopf' + (r === z.reiter ? '.gold' : ''), { onclick: () => { z.reiter = r; zeichne(); f.inhalt.scrollTop = 0; } }, symbol('ui', { staedte: 'stadt', einheiten: 'einheit', wirtschaft: 'gold', wunder: 'wunder' }[r]), R().reiter[r])));
+  const reiter = el('div.reiter.re-reiter', REITER.map((r) => el('button.knopf' + (r === z.reiter ? '.gold' : ''), { onclick: () => { z.reiter = r; zeichne(); f.inhalt.scrollTop = 0; } }, symbol('ui', { staedte: 'stadt', einheiten: 'einheit', wirtschaft: 'gold', politik: 'kultur', wunder: 'wunder' }[r]), R().reiter[r])));
   const k = el('div');
   f.inhalt.replaceChildren(reiter, k);
-  ({ staedte, einheiten, wirtschaft, wunder })[z.reiter](k);
+  ({ staedte, einheiten, wirtschaft, politik, wunder })[z.reiter](k);
   f.inhalt.scrollTop = scroll;
 }
 
@@ -244,6 +246,27 @@ function wirtschaft(k) {
 }
 
 // ---------- Wunder ----------
+function politik(k) {
+  const d = du();
+  const gew = d.politiken || [], frei = d.politik_plaetze || 0;
+  const rate = d.raten?.kultur || 0;
+  const bis = d.politik_schwelle - (d.kultur_gesamt || 0);
+  k.append(el('div.re-summe',
+    el('span', symbol('ui', 'kultur'), ` Kultur gesamt: ${zahl(d.kultur_gesamt || 0)}`),
+    el('span', symbol('ui', 'haken'), ` Gewählt: ${gew.length} von ${POLITIKEN.length}`),
+    el('span', { class: frei ? 'gold-t' : '', text: frei ? `${frei} freier Platz – wähle unten eine Politik!` : (gew.length >= POLITIKEN.length ? 'Alle Politiken gewählt.' : `Nächster Platz bei ${zahl(d.politik_schwelle)} Kultur (noch ${zahl(Math.max(0, bis))}${rate > 0 ? ', etwa ' + Math.ceil(Math.max(0, bis) / (rate * (Z.ansicht.partie ? Z.ansicht.partie.rundeMs / 3600000 : 1))) + (Z.ansicht.partie ? ' Runden' : ' Std') : ''})`) })));
+  k.append(el('p.klein', { text: 'Sozialpolitiken wie in Civilization: Deine Kultur füllt eine Leiste. Jede volle Schwelle schenkt dir einen Platz, in dem du eine Politik wählst. Sie wirkt sofort und für immer.' }));
+  for (const kat of POLITIK_KATEGORIEN) {
+    k.append(el('h3', { text: kat.name, style: { margin: '10px 0 4px' } }), el('p.klein', { text: kat.beschreibung }));
+    k.append(el('div.re-wunder', POLITIKEN.filter((p) => p.kategorie === kat.id).map((p) => {
+      const mein = gew.includes(p.id);
+      return el('div.eintrag' + (mein ? '.mein' : ''), { style: { cursor: !mein && frei ? 'pointer' : 'default', opacity: !mein && !frei ? 0.7 : 1 }, onclick: async () => { if (mein || !frei) return; const r = await befehl({ art: 'politik_waehlen', id: p.id }); if (r && r.ok === false) fehler(r.fehler || 'Das geht gerade nicht.'); } },
+        el('div', { style: { flex: 1, minWidth: 0 } }, el('b', { text: p.name }), el('div.klein', { text: p.beschreibung }),
+          mein ? el('div.re-status.gold-t', symbol('ui', 'haken'), ' Gewählt') : (frei ? el('div.re-status.gruen-t', 'Klicken zum Wählen') : null)));
+    })));
+  }
+}
+
 function wunder(k) {
   const a = Z.ansicht;
   const W = R().wunderT;

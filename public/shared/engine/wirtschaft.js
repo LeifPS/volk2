@@ -3,7 +3,7 @@ import { karte } from '../karte.js';
 import { umkreis, abstand, nachbarn } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE, LAGERGUETER, LAGER_NAMEN } from '../daten/rohstoffe.js';
-import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } from '../daten/index.js';
+import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN, POLITIK } from '../daten/index.js';
 import {
   STD, MIN, ERTRAG_FAKTOR as F, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
@@ -36,6 +36,7 @@ export const wirtschaft = {
       if (e >= STADTSTAAT.freund) for (const [k, x] of Object.entries(def.bonus || {})) if (k in b) b[k] += x;
       if (ss.verbuendet === v.id) for (const [k, x] of Object.entries(def.buendnis_bonus || {})) if (k in b) b[k] += x;
     }
+    for (const pid of v.politiken || []) for (const [k, x] of Object.entries(POLITIK[pid]?.bonus || {})) if (k in b) b[k] += x;
     // Jahreszeit
     const jz = this.z.global.jahreszeit || 0;
     if (jz === 1) b.nahrung_prozent += 5; else if (jz === 3) b.nahrung_prozent -= 5; else if (jz === 2) b.gold_prozent += 5;

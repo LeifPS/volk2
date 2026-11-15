@@ -399,6 +399,7 @@ export function naechsteAktion() {
     kand.push({ art: 'einheit', id: e.id, feld: e.feld });
   }
   if (!du()?.forschung?.aktiv) { fenster_.forschung(); return; }
+  if (du()?.politik_plaetze > 0) { fenster_.reich('politik'); return; }
   if (!kand.length) { toast('Alles hat zu tun. Schau später wieder vorbei – oder sieh dir die Hilfe an (H).', 'info', { symbol: 'haken' }); return; }
   naechsteIndex = (naechsteIndex + 1) % kand.length;
   const k = kand[naechsteIndex];

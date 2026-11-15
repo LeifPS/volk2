@@ -19,6 +19,7 @@ export * from './befoerderungen.js';
 export * from './gebaeude.js';
 export * from './wunder.js';
 export * from './forschung.js';
+export * from './politiken.js';
 export * from './akteure.js';
 
 const nachId = (liste) => Object.assign(Object.create(null), Object.fromEntries(liste.map((x) => [x.id, x])));

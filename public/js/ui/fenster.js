@@ -5,7 +5,7 @@ import { ROHSTOFFE } from '../../shared/daten/rohstoffe.js';
 const lade = (pfad) => import(pfad);
 export async function forschung(id) { (await lade('./forschungsbaum.js')).oeffneForschung(id); }
 export async function stadt(id, reiter) { (await lade('./stadt.js')).oeffneStadt(id, reiter); }
-export async function reich() { (await lade('./reich.js')).oeffneReich(); }
+export async function reich(reiter) { (await lade('./reich.js')).oeffneReich(reiter); }
 export async function diplomatie(volkId) { (await lade('./diplomatie.js')).oeffneDiplomatie(volkId); }
 export async function rangliste() { (await lade('./rangliste.js')).oeffneRangliste(); }
 export async function lexikon(art, id) { (await lade('./lexikon.js')).oeffneLexikon(art, id); }

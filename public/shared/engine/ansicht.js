@@ -1,7 +1,7 @@
 // Was ein Spieler sehen darf (Nebel des Krieges serverseitig), als kompakte Ansicht und als Delta zur letzten Ansicht.
 import { abstand } from '../hex.js';
 import { karte } from '../karte.js';
-import { EINHEIT, GEB, GEBAEUDE, EINHEITEN, WUNDER, WUNDER_NACH_ID, FORSCHUNG, VERBESSERUNG, ROHSTOFFE } from '../daten/index.js';
+import { EINHEIT, GEB, GEBAEUDE, EINHEITEN, WUNDER, WUNDER_NACH_ID, FORSCHUNG, VERBESSERUNG, ROHSTOFFE, politikPlaetze, politikSchwelle } from '../daten/index.js';
 import { gesamtWertung, wachstumsBedarf, grenzKosten, STD } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { bereichVon, istMilitaer } from './einheiten.js';
@@ -25,6 +25,7 @@ export const ansicht = {
       zeitalter: v.zeitalter || 0, schutz_bis: v.schutz_bis, gegruendet: v.gegruendet, tutorial: v.tutorial, einstellungen: v.einstellungen || {},
       meldungen: (v.meldungen || []).slice(-80), gelesen_bis: v.gelesen_bis || 0, mangel_seit: v.mangel_seit || null, abkommen_bis: v.abkommen_bis || null,
       routen: this.aktiveRouten(vid).length, routenKapazitaet: this.routenKapazitaet(v), startfeld: v.startfeld, zuletzt_gesehen: v.zuletzt_gesehen_vorher || null,
+      politiken: v.politiken || [], politik_plaetze: politikPlaetze(v.kultur_gesamt || 0, (v.politiken || []).length), politik_schwelle: politikSchwelle((v.politiken || []).length + 1), kultur_gesamt: Math.round(v.kultur_gesamt || 0),
       luxus_handel: v.luxus_handel || [], luxus_abgabe: v.luxus_abgabe || [], schonfrist_bis: v.schonfrist_bis || 0,
     };
     for (const o of this.alleVoelker()) {

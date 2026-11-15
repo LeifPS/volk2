@@ -425,6 +425,10 @@ T.lexikon = {
       '• **Tippen:** auswählen. • **Ziehen** mit einem Finger: Karte verschieben. • **Zwei Finger** auseinander/zusammen: zoomen. • **Lange drücken** auf ein Feld: Befehl (wie Rechtsklick) – hinlaufen oder angreifen.',
       '• **Lange drücken** auf einen Knopf zeigt seine Erklärung. • Alle Knöpfe sind groß genug für Finger. Spiele am besten im Querformat.',
     ] },
+    { id: 'politik', titel: 'Sozialpolitiken', sym: 'kultur', absaetze: () => [
+      'Wie bei Civilization füllt deine **Kultur** eine Leiste. Jedes Mal, wenn eine Schwelle erreicht ist, bekommst du einen Platz und wählst eine **Sozialpolitik** (F2 → Politiken).',
+      'Es gibt drei Richtungen: **Tradition** (Nahrung, Zufriedenheit), **Freiheit** (Wissenschaft, Gold, Handel) und **Ehre** (Militär). Jede Politik wirkt sofort und für immer. Die KI-Völker wählen auch.',
+    ] },
     { id: 'tasten', titel: 'Tastenkürzel', sym: 'menue', absaetze: () => [
       '• **Leertaste:** Nächste Aktion • **Enter:** Zug beenden • **F:** befestigen • **E:** erkunden • **B:** Stadt gründen • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
     ] },
@@ -675,7 +679,7 @@ T.stadt = {
 
 // Reichsübersicht (ui/reich.js)
 T.reich = {
-  titel: 'Dein Reich', reiter: { staedte: 'Städte', einheiten: 'Einheiten', wirtschaft: 'Wirtschaft', wunder: 'Weltwunder' },
+  titel: 'Dein Reich', reiter: { staedte: 'Städte', einheiten: 'Einheiten', wirtschaft: 'Wirtschaft', politik: 'Politiken', wunder: 'Weltwunder' },
   sortTip: 'Klicken zum Sortieren', keineStaedte: 'Du hast noch keine Stadt. Gründe mit deinem Siedler die erste!', keineEinheiten: 'Du hast keine Einheiten.',
   anzahlStaedte: (n) => n === 1 ? '1 Stadt' : `${n} Städte`, einwohnerGesamt: (n) => `${n} Einwohner`, zerstoert: 'zerstört',
   spalten: { name: 'Stadt', bev: 'Einw.', nahrung: 'Nahrung', produktion: 'Prod.', gold: 'Gold', wissenschaft: 'Wiss.', zufriedenheit: 'Zufr.', bau: 'Aktueller Bau', typ: 'Einheit', ort: 'Ort', lp: 'LP', status: 'Status', unterhalt: 'Unterhalt' },
