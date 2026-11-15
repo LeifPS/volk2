@@ -35,14 +35,14 @@ export const diplomatie = {
   istOnline(vid) {
     const v = this.z.voelker[vid];
     if (!v) return false;
-    if (IMMER_ONLINE.has(v.art)) return true;
+    if (IMMER_ONLINE.has(v.art) || this.z.global.partie) return true;
     return (v.verbunden || 0) > 0 || this.t - (v.letzte_aktivitaet || 0) <= SCHUTZ.onlineFenster;
   },
   /** Darf man diesem (kriegführenden) Spieler gerade schaden? Waffenruhe nach 30 min offline, 10 min Schonfrist nach Rückkehr. */
   angreifbar(vid) {
     const v = this.z.voelker[vid];
     if (!v) return false;
-    if (IMMER_ONLINE.has(v.art)) return true;
+    if (IMMER_ONLINE.has(v.art) || this.z.global.partie) return true;
     if ((v.verbunden || 0) > 0) return this.t >= (v.schonfrist_bis || 0);
     const weg = Math.max(v.getrennt_seit || 0, v.letzte_aktivitaet || 0);
     return this.t - weg < SCHUTZ.waffenruheNach;

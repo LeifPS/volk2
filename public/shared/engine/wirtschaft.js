@@ -7,7 +7,7 @@ import { GEB, WUNDER_NACH_ID, FORSCHUNG, ROHSTOFF, VERBESSERUNG, STADTSTAATEN } 
 import {
   STD, MIN, ERTRAG_FAKTOR as F, GOLD_FAKTOR, WISSEN_JE_EINWOHNER, NAHRUNG_PRO_EINWOHNER, BAUSTOFFE, STRATEGISCH, LAGER_BASIS_BAU, LAGER_BASIS_STRATEGISCH,
   STADT_RADIUS_ARBEIT, STADT_RADIUS_GRENZE_MAX, wachstumsBedarf, grenzKosten, zufriedenheitsFaktor, stadtUnzufriedenheit,
-  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, anfangsTempo, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
+  freieEinheiten, freierGebaeudeUnterhalt, forschungsTempo, anfangsTempo, kiBoni, FORSCHUNGSABKOMMEN, HANDEL, STADTSTAAT,
 } from '../regeln.js';
 import { SpielFehler, pruefe } from './spiel.js';
 
@@ -152,6 +152,7 @@ export const wirtschaft = {
     const rabatt = Math.min(75, Math.max(0, b.unterhalt_rabatt)) / 100;
     erg.unterhalt.einheiten *= 1 - rabatt; erg.unterhalt.gebaeude *= 1 - rabatt;
     erg.einnahmen += erg.handel;
+    if (v.art === 'ki') erg.einnahmen *= 1 + kiBoni(v.ki?.stufe).gold / 100;
     erg.gold = erg.einnahmen - erg.unterhalt.einheiten - erg.unterhalt.gebaeude;
     if (v.abkommen_bis && v.abkommen_bis > this.t) erg.wissenschaft += FORSCHUNGSABKOMMEN.bonus;
     erg.wissenschaft *= 1; // Wissenschaftsprozente sind schon in den Städten enthalten
@@ -276,7 +277,7 @@ export const wirtschaft = {
     const f = FORSCHUNG[id];
     let dauer = f.dauer;
     if (f.wiederholbar) dauer *= 1 + 0.15 * (v.forschung.erforscht[id] || 0);
-    const kiFaktor = v.art === 'ki' ? 1.6 : 1;
+    const kiFaktor = v.art === 'ki' ? 100 / Math.max(10, 100 + kiBoni(v.ki?.stufe).forschung) : 1;
     return dauer * 1000 * kiFaktor / anfangsTempo(f.zeitalter || 0) / forschungsTempo(wissenschaft);
   },
 

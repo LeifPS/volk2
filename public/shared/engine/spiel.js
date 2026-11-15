@@ -13,6 +13,7 @@ import { diplomatie } from './diplomatie.js';
 import { akteure } from './akteure.js';
 import { ansicht } from './ansicht.js';
 import { start } from './start.js';
+import { runden, BEFEHLE_IMMER } from './runden.js';
 
 export class SpielFehler extends Error {}
 /** Wirft einen verständlichen Fehler für den Spieler, wenn die Bedingung nicht erfüllt ist. */
@@ -134,7 +135,7 @@ export class Spiel {
     let best = null;
     const k = (t, schluessel, f, notbremse) => { if (t != null && Number.isFinite(t) && (!best || t < best.t)) best = { t, schluessel, f, notbremse }; };
     for (const e of this.alleEinheiten()) {
-      if (e.pfad && e.pfad.length) k(e.pfad[0].t, 'schritt' + e.id, () => this.schritt(e.id), () => { e.pfad = []; });
+      if (e.pfad && e.pfad.length && !this.z.global.partie) k(e.pfad[0].t, 'schritt' + e.id, () => this.schritt(e.id), () => { e.pfad = []; });
       if (e.arbeit) k(e.arbeit.fertig_um, 'arbeit' + e.id, () => this.arbeitFertig(e.id), () => { e.arbeit = null; });
       if (e.einsatz) k(e.einsatz.zurueck_um, 'einsatz' + e.id, () => this.einsatzZurueck(e.id), () => { e.einsatz = null; });
     }
@@ -149,7 +150,7 @@ export class Spiel {
       k(this.goldNullZeit(v), 'goldnull' + v.id, () => this.goldNull(v.id));
       if (v.mangel_um) k(v.mangel_um, 'mangel' + v.id, () => this.mangelSchritt(v.id), () => { v.mangel_um = null; });
       if (v.abkommen_bis) k(v.abkommen_bis, 'abk' + v.id, () => { this.aendern(v.id); v.abkommen_bis = null; this.markiere('v' + v.id); this.meldung(v.id, 'Das Forschungsabkommen ist ausgelaufen.'); });
-      if (v.ki && v.ki.denken_um) k(v.ki.denken_um, 'ki' + v.id, () => this.kiDenken(v.id), () => { v.ki.denken_um = this.t + STD; });
+      if (v.ki && v.ki.denken_um && !this.z.global.partie) k(v.ki.denken_um, 'ki' + v.id, () => this.kiDenken(v.id), () => { v.ki.denken_um = this.t + STD; });
     }
     const g = this.z.global;
     if (g.barbaren_um) k(g.barbaren_um, 'barbaren', () => this.barbarenZug(), () => { g.barbaren_um = this.t + STD; });
@@ -169,13 +170,18 @@ export class Spiel {
    * Führt einen Befehl eines Volkes aus. Liefert { ok: true, ... } oder { ok: false, fehler }.
    * Der Client legt nie Werte fest; alles wird hier geprüft.
    */
-  befehl(vid, b) {
+  befehl(vid, b, echt = jetzt()) {
     try {
-      this.verarbeite(jetzt());
+      this._jetztEcht = echt;
+      this.verarbeite(this.jetztSpiel(echt));
       pruefe(b && typeof b === 'object' && typeof b.art === 'string', 'Ungültiger Befehl.');
       const v = this.z.voelker[vid];
       pruefe(v, 'Unbekanntes Volk.');
-      if (v.art === 'spieler') { v.letzte_aktivitaet = this.t; this.markiere('v' + vid); }
+      const p = this.z.global.partie;
+      if (p) {
+        pruefe(p.status === 'laeuft', 'Die Partie ist zu Ende.');
+        pruefe(BEFEHLE_IMMER.has(b.art) || this.amZug() === vid, p.reihe.includes(vid) ? 'Du bist nicht am Zug. Warte, bis du dran bist.' : 'Dein Volk ist ausgeschieden.');
+      } else if (v.art === 'spieler') { v.letzte_aktivitaet = this.t; this.markiere('v' + vid); }
       const h = this['befehl_' + b.art];
       pruefe(typeof h === 'function' && BEFEHLE.has(b.art), 'Unbekannter Befehl: ' + b.art);
       const erg = h.call(this, v, b) || {};
@@ -195,7 +201,7 @@ export const BEFEHLE = new Set([
   'forschen', 'forschung_schlange', 'feld_bewirtschaften', 'auto_bewirtschaften', 'aufloesen', 'aufruesten', 'befoerdern',
   'krieg_erklaeren', 'diplomatie_angebot', 'angebot_antwort', 'angebot_zurueckziehen', 'tausch_angebot', 'handelsroute',
   'stadtstaat_geschenk', 'pluendern', 'luftangriff', 'verlegen', 'atomschlag', 'stadt_angriff', 'stadt_umbenennen',
-  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern',
+  'meldungen_gelesen', 'tutorial', 'neuanfang', 'ping', 'einstellungen', 'tribut_fordern', 'zug_beenden',
 ]);
 
-Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start);
+Object.assign(Spiel.prototype, wirtschaft, bau, forschung, einheiten, kampf, diplomatie, akteure, ansicht, start, runden);

@@ -32,7 +32,18 @@ export const start = {
       this.einheitErzeugen(v.id, 'krieger', feld);
       this.einheitErzeugen(v.id, 'arbeiter', feld);
     }
-    for (const s of STADTSTAATEN) {
+    this.stadtstaatenAnlegen(STADTSTAATEN.length);
+    this.tiereNachfuellen();
+    for (let i = 0; i < 4; i++) this.lagerGruenden();
+    this.markiere('g');
+  },
+
+  /** Vorlagen für KI-Gegner (Namen, Farben, Persönlichkeit). */
+  kiVorlagen() { return KI_VOELKER; },
+
+  /** Legt bis zu n Stadtstaaten an. */
+  stadtstaatenAnlegen(n) {
+    for (const s of STADTSTAATEN.slice(0, n)) {
       const feld = this.startplatz(12);
       if (feld < 0) continue;
       const v = this.volkAnlegen({ art: 'stadtstaat', name: s.name, farbe: s.farbe, vorlage: s.id });
@@ -43,16 +54,13 @@ export const start = {
       this.einheitErzeugen(v.id, 'krieger', feld);
       for (let i = 0; i < 3; i++) this.grenzwachstum(st.id);
     }
-    this.tiereNachfuellen();
-    for (let i = 0; i < 4; i++) this.lagerGruenden();
-    this.markiere('g');
   },
 
   volkAnlegen(o) {
     const id = this.neueId();
     const v = {
       id, art: o.art, name: o.name, farbe: o.farbe, konto: o.konto || null, vorlage: o.vorlage || null,
-      gegruendet: this.t, schutz_bis: o.art === 'spieler' ? this.t + SCHUTZ.neulingDauer : 0,
+      gegruendet: this.t, schutz_bis: o.art === 'spieler' && !this.z.global.partie ? this.t + SCHUTZ.neulingDauer : 0,
       gold: START_LAGER.gold, lager: { holz: START_LAGER.holz, stein: START_LAGER.stein }, stand_um: this.t,
       forschung: { aktiv: null, fortschritt: 0, teil: {}, schlange: [], erforscht: {} },
       zeitalter: 0, bekannt: {}, meldungen: [], verbunden: 0, letzte_aktivitaet: o.art === 'spieler' ? this.t : 0,

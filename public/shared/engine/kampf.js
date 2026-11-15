@@ -3,7 +3,7 @@ import { karte } from '../karte.js';
 import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, BEFOERDERUNG, VERBESSERUNG, GEB, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, EP, STD, MIN, epFuerBefoerderung } from '../regeln.js';
+import { KAMPF, schaden, erwarteterSchaden, verwundungsMalus, stadtGrundStaerke, STADT_GRUND_HP, HEILUNG, EP, STD, MIN, epFuerBefoerderung, kiBoni } from '../regeln.js';
 import { pruefe, SpielFehler } from './spiel.js';
 import { bereichVon, schichtVon, istMilitaer } from './einheiten.js';
 
@@ -84,6 +84,8 @@ export const kampf = {
     const liste = [];
     const basis = art === 'fern' && rolle === 'angriff' ? d.fern : art === 'luft' && rolle === 'angriff' ? (d.fern || d.staerke) : d.staerke;
     liste.push({ text: (art === 'fern' && rolle === 'angriff' ? 'Fernkampfstärke ' : 'Kampfstärke ') + d.name, wert: basis });
+    const kv = this.z.voelker[e.volk];
+    if (kv?.art === 'ki' && kv.ki?.stufe) { const kb = kiBoni(kv.ki.stufe).kampf; if (kb) liste.push({ text: 'KI-Stufe', wert: kb }); }
     const hp = this.aktuelleHp(e);
     const vm = verwundungsMalus(hp);
     if (vm) liste.push({ text: `Verwundet (${Math.round(hp)} LP)`, wert: vm });
@@ -199,6 +201,7 @@ export const kampf = {
     const d = EINHEIT[e.typ];
     const feld = b.ziel | 0;
     pruefe(istMilitaer(d), 'Diese Einheit kann nicht kämpfen.');
+    pruefe(!this.z.global.partie || e.mp > 1e-9, 'Diese Einheit hat in dieser Runde keine Bewegungspunkte mehr.');
     pruefe(bereichVon(d) !== 'luft', 'Flugzeuge greifen mit "Luftangriff" an.');
     pruefe(!e.in, 'Die Einheit muss zuerst ausgeladen werden.');
     const ziel = this.zielAuf(feld, e.volk);
@@ -213,7 +216,7 @@ export const kampf = {
       return this.angriffAusfuehren(e, feld);
     }
     // erst hinlaufen
-    const ok = this.bewegeNach(e, feld, { nachbar: true, still: true });
+    const ok = this.bewegeNach(e, feld, { nachbar: true, still: true, spaeter: true });
     pruefe(ok, 'Es gibt keinen Weg zum Ziel.');
     if (fern) {
       // so weit laufen, bis das Ziel in Reichweite ist
@@ -223,7 +226,12 @@ export const kampf = {
     }
     e.angriff = feld;
     this.markiere('e' + e.id);
-    return { marsch: true, ankunft: e.pfad[e.pfad.length - 1]?.t };
+    const ankunft = e.pfad[e.pfad.length - 1]?.t;
+    if (this.z.global.partie) {
+      this.bewegungAusfuehren(e);
+      return { marsch: !!this.z.einheiten[e.id]?.pfad?.length, ankunft };
+    }
+    return { marsch: true, ankunft };
   },
 
   angriffNachMarsch(e, feld) {
@@ -246,6 +254,7 @@ export const kampf = {
     const ziel = this.zielAuf(feld, e.volk);
     pruefe(ziel, 'Dort gibt es nichts anzugreifen.');
     this.hpAbrechnen(e);
+    if (this.z.global.partie) e.mp = 0; // wie in Civ: ein Angriff beendet die Bewegung der Einheit
     // Zivilisten fangen
     if (ziel.zivil) {
       pruefe(abstand(e.feld, feld) === 1 && bereichVon(d) !== 'luft', 'Zum Gefangennehmen muss die Einheit direkt daneben stehen.');

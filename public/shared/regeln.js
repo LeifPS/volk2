@@ -137,3 +137,35 @@ export const AUFRUESTEN_FAKTOR = 0.6; // Anteil der Goldkosten-Differenz
 export function gesamtWertung(k) {
   return Math.round(k.gold / 50 + k.militaer / 5 + k.staedte * 20 + k.bevoelkerung * 4 + k.forschungen * 5 + k.gebiet / 2 + k.kultur / 200 + k.wunder * 60);
 }
+
+// --- Partie (Runden-Modus wie Civilization) ---
+/** Spieltempo = Länge einer Runde in Spielzeit. Längere Runden bedeuten: Bauen, Forschen und Wachsen dauern weniger Runden. */
+export const SPIELTEMPO = {
+  episch: { name: 'Episch', rundeMs: 30 * MIN, text: 'Lange Partie, alles dauert viele Runden.' },
+  normal: { name: 'Normal', rundeMs: 60 * MIN, text: 'Ausgewogenes Tempo.' },
+  schnell: { name: 'Schnell', rundeMs: 120 * MIN, text: 'Alles geht in weniger Runden.' },
+  blitz: { name: 'Blitz', rundeMs: 240 * MIN, text: 'Kurze Partie, wenig Runden.' },
+};
+/** Standard-Einstellungen einer Partie (der Host kann sie in der Lobby ändern). */
+export const PARTIE = {
+  tempo: 'normal',
+  rundenlimit: 400,
+  siege: { eroberung: true, wissenschaft: true, punkte: true },
+  // Zugzeit-Konto in echter Zeit: jeder hat ein Konto, das nur im eigenen Zug läuft und pro beendetem Zug wieder aufgefüllt wird.
+  zugzeit: { aktiv: true, start: 24 * STD, plus: 1 * STD, max: 24 * STD, verpasstMax: 5 },
+  stadtstaaten: 4, barbaren: true, tiere: true,
+  maxSpieler: 8,
+};
+export const WISSENSCHAFTSSIEG_FORSCHUNG = 'fusionsforschung';
+
+/** KI-Stufen: Leicht bremst die KI, Normal und Schwer spielen fair, die höheren Stufen geben der KI Boni (wie in Civ). */
+export const KI_STUFEN = [
+  { id: 'leicht', name: 'Leicht', bau: -35, forschung: -40, kampf: -2, gold: -20, aggro: 0 },
+  { id: 'normal', name: 'Normal', bau: 0, forschung: 0, kampf: 0, gold: 0, aggro: 1 },
+  { id: 'schwer', name: 'Schwer', bau: 0, forschung: 0, kampf: 0, gold: 0, aggro: 2 },
+  { id: 'boni1', name: 'Anspruchsvoll (Boni I)', bau: 25, forschung: 25, kampf: 1, gold: 20, aggro: 2 },
+  { id: 'boni2', name: 'Brutal (Boni II)', bau: 50, forschung: 50, kampf: 3, gold: 40, aggro: 3 },
+  { id: 'boni3', name: 'Gnadenlos (Boni III)', bau: 100, forschung: 100, kampf: 5, gold: 80, aggro: 3 },
+];
+/** Boni einer KI-Stufe in Prozent (bau, forschung, gold) bzw. Stärkepunkten (kampf). Unbekannte Stufe = Normal. */
+export function kiBoni(stufe) { return KI_STUFEN.find((x) => x.id === stufe) || KI_STUFEN[1]; }

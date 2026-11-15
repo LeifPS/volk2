@@ -306,7 +306,7 @@ export const akteure = {
       const dist = abstand(e.feld, best.feld);
       const fern = (d.fern || 0) > 0 && (d.reichweite || 0) >= dist;
       if (dist === 1 || fern) { try { this.angriffAusfuehren(e, best.feld); } catch (err) { if (!(err instanceof SpielFehler)) throw err; } }
-      else { this.bewegeNach(e, best.feld, { still: true, nachbar: true }); e.angriff = best.feld; }
+      else { this.bewegeNach(e, best.feld, { still: true, nachbar: true, spaeter: true }); e.angriff = best.feld; if (this.z.global.partie) { this.bewegungAusfuehren(e); if (this.z.einheiten[e.id] && !e.pfad?.length && e.angriff != null) this.ankunft(e); } }
       return;
     }
     if (best && best.art === 'pluendern') {

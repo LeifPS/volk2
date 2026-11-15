@@ -47,7 +47,7 @@ export const einheiten = {
       ziel = frei;
     }
     const id = this.neueId();
-    const e = { id, volk: vid, typ, feld: ziel, hp: 100, hp_um: this.t, ep: 0, befoerderungen: [], pfad: [], modus: 'wach', erstellt: this.t };
+    const e = { id, volk: vid, typ, feld: ziel, hp: 100, hp_um: this.t, ep: 0, befoerderungen: [], pfad: [], modus: 'wach', erstellt: this.t, mp: 0 };
     if (o.stadt) {
       const s = this.z.staedte[o.stadt];
       const erf = s ? this.gebaeudeSumme(s, 'erfahrung') : 0;
@@ -177,6 +177,18 @@ export const einheiten = {
     const bonus = this.tempoBonus(e, d);
     let t = this.t;
     const pfad = [];
+    const partie = this.z.global.partie;
+    if (partie) {
+      // Rundenmodus: Bewegungspunkte. t ist die Spielzeit der Runde, in der der Schritt geschieht.
+      const mpMax = this.mpMax(e);
+      let rest = Math.max(0, e.mp || 0), r = 0;
+      for (let j = 0; j < w.felder.length; j++) {
+        if (rest <= 1e-9) { r++; rest = mpMax; }
+        rest = Math.max(0, rest - w.kosten[j]);
+        pfad.push({ f: w.felder[j], k: w.kosten[j], t: this.t + r * partie.rundeMs });
+      }
+      return pfad;
+    }
     for (let j = 0; j < w.felder.length; j++) {
       t += schrittDauer(w.kosten[j], d.tempo || 2, bonus);
       pfad.push({ f: w.felder[j], t });
@@ -205,6 +217,7 @@ export const einheiten = {
       e.arbeit = null;
       if (e.modus === 'befestigt' || e.modus === 'schlafen') e.modus = 'wach';
       this.markiere('e' + e.id);
+      if (this.z.global.partie && !o.spaeter) this.bewegungAusfuehren(e);
       return true;
     } catch (err) {
       if (o.still && err instanceof SpielFehler) return false;
@@ -220,7 +233,7 @@ export const einheiten = {
     if (e.modus === 'erkunden' || e.modus === 'auto_arbeit') e.modus = 'wach';
     if (e.route && !b.route) this.routeBeenden(e, 'Die Handelsroute wurde beendet, weil die Karawane einen neuen Befehl bekam.');
     this.bewegeNach(e, b.ziel | 0);
-    return { ankunft: e.pfad[e.pfad.length - 1].t };
+    return { ankunft: e.pfad.length ? e.pfad[e.pfad.length - 1].t : this.t };
   },
 
   befehl_anhalten(v, b) {
