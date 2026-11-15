@@ -4,7 +4,7 @@ import { karte, startWert, stadtGelaendeOk } from '../karte.js';
 import { ANZAHL, abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { EINHEIT, EINHEITEN, GEB, GEBAEUDE, FORSCHUNGEN, FORSCHUNG, BARBARENLAGER, VERBESSERUNG } from '../daten/index.js';
-import { STD, MIN, TAG, KAMPF } from '../regeln.js';
+import { STD, MIN, TAG, KAMPF, kiBoni } from '../regeln.js';
 import { bereichVon, istMilitaer, schichtVon } from './einheiten.js';
 import { SpielFehler } from './spiel.js';
 
@@ -62,7 +62,7 @@ export const akteure = {
     const garnisonSoll = v.art === 'stadtstaat' ? 2 : krieg ? 2 : 1;
     const hier = mil.filter((e) => abstand(e.feld, s.feld) <= 2).length;
     if (hier < garnisonSoll) wunsch.push(['einheit', this.kiBesteEinheit(v, s, 'nahkampf')]);
-    if (krieg && mil.length < this.staedteVon(v.id).length * 3) wunsch.push(['einheit', this.kiBesteEinheit(v, s, this.zufall() < 0.5 ? 'fernkampf' : 'nahkampf')]);
+    if (krieg && mil.length < this.staedteVon(v.id).length * (2 + kiBoni(v.ki.stufe).aggro)) wunsch.push(['einheit', this.kiBesteEinheit(v, s, this.zufall() < 0.5 ? 'fernkampf' : 'nahkampf')]);
     if (v.art === 'ki' || v.ki.bot) {
       const arbeiter = eigene.filter((e) => EINHEIT[e.typ].faehigkeiten?.includes('arbeiten')).length;
       if (arbeiter < Math.min(4, this.staedteVon(v.id).length)) wunsch.push(['einheit', 'arbeiter']);
@@ -102,12 +102,13 @@ export const akteure = {
       if (!istMilitaer(d) || bereichVon(d) !== 'land') continue;
       // Feinde im eigenen Gebiet oder daneben angreifen (nie Spielerstädte)
       let ziel = null;
-      for (const i of umkreis(e.feld, Math.max(2, (d.reichweite || 0) + 1))) {
+      const aggro = v.art === 'ki' ? kiBoni(v.ki?.stufe).aggro : 1;
+      for (const i of umkreis(e.feld, Math.max(2, (d.reichweite || 0) + 1) + (aggro >= 2 ? aggro * 2 : 0))) {
         for (const u of this.einheitenAuf(i)) {
           if (u.volk === v.id || this.kampfHindernis(v.id, u.volk)) continue;
           const bes = this.besitzer(u.feld);
           const gegner = this.z.voelker[u.volk];
-          if (gegner.art === 'spieler' && bes !== v.id && !(v.ki.rache?.[u.volk] > this.t)) continue;
+          if (gegner.art === 'spieler' && bes !== v.id && !(v.ki.rache?.[u.volk] > this.t) && !(aggro >= 2 && this.imKrieg(v.id, u.volk))) continue;
           ziel = u; break;
         }
         if (ziel) break;
@@ -163,7 +164,8 @@ export const akteure = {
     // Gekränkt genug? Dann (nur gegen online und ungeschützte Spieler) Krieg erklären
     for (const [o, wert] of Object.entries(ki.groll || {})) {
       const ov = this.z.voelker[o];
-      if (!ov || wert < 60 || this.imKrieg(v.id, +o)) continue;
+      const schwelle = [Infinity, 60, 45, 30][kiBoni(ki.stufe).aggro] ?? 60; // Leicht beginnt nie einen Krieg, Schwer und die Boni-Stufen früher
+      if (!ov || wert < schwelle || this.imKrieg(v.id, +o)) continue;
       if (ov.art === 'spieler' && (ov.schutz_bis > this.t || !this.istOnline(+o))) continue;
       this.kiKriegErklaeren(v, +o, 'Ihr habt uns zu oft beleidigt. Jetzt antworten wir mit Waffen!');
     }

@@ -109,3 +109,15 @@ h1 { font-size: 24px; } h2 { font-size: 18px; color: var(--akzent); } h3 { font-
   #meldungsleiste { top: calc(150px + var(--sicher-oben)); width: 240px; }
 }
 @media (max-height: 560px) { #auswahl { max-height: 40vh; } }
+
+/* Lobby und Runden-Modus */
+#start .pix.breit { width: min(720px, 100%); max-height: 92vh; overflow-y: auto; touch-action: pan-y; }
+#start select, #start input[type=number] { background: #0e1119; color: var(--text); border: 2px solid var(--rand); box-shadow: inset 2px 2px 0 #000; padding: 8px; max-width: 100%; box-sizing: border-box; }
+#start .formzeile > select, #start .formzeile > input[type=number] { width: 100%; }
+#start h2, #start h3 { margin: 12px 0 6px; }
+#rundenleiste { position: fixed; left: 50%; top: calc(46px + var(--sicher-oben)); transform: translateX(-50%); z-index: 19; display: flex; gap: 10px; align-items: center; padding: 4px 12px; max-width: calc(100% - 16px); white-space: nowrap; font-size: 14px; }
+#rundenleiste.dran { box-shadow: 0 0 0 3px var(--akzent); }
+#zugbeenden { position: fixed; right: calc(6px + var(--sicher-rechts)); bottom: calc(208px + var(--sicher-unten)); z-index: 18; font-size: 16px; padding: 10px 14px; }
+#spielende { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(5,6,10,.8); }
+#spielende .pix { width: min(440px, 100%); padding: 20px; text-align: center; }
+#start .pix.breit .formzeile, #start .pix.breit div { min-width: 0; }

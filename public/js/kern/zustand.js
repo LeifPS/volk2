@@ -20,7 +20,11 @@ export function melde(ereignis, daten) { for (const fn of hoerer.get(ereignis) |
 
 /** Serverzeit (abgeglichen). */
 export function serverJetzt() { return jetzt(); }
-export function setzeVersatz(v) { Z.versatz = v; setzeUhr(() => Date.now() + Z.versatz); }
+export function setzeVersatz(v) { Z.versatz = v; setzeUhr(() => (Z.ansicht?.partie ? Z.ansicht.t : Date.now() + Z.versatz)); }
+/** Echte Server-Uhrzeit (für das Zugzeit-Konto), unabhängig von der angehaltenen Spielzeit. */
+export function echtJetzt() { return Date.now() + Z.versatz; }
+export const partie = () => Z.ansicht?.partie || null;
+export const amZug = () => { const p = partie(); return !!p && p.status === 'laeuft' && p.dran === Z.volk; };
 
 export function nebelSetzen(b64) {
   const s = atob(b64);
@@ -32,6 +36,7 @@ export function erkundet(i) { return (Z.nebel[i >> 3] & (1 << (i & 7))) !== 0; }
 
 export function vollSetzen(ansicht, nebel) {
   Z.ansicht = ansicht;
+  setzeVersatz(Z.versatz);
   if (nebel) nebelSetzen(nebel);
   melde('aenderung', { voll: true });
 }
@@ -51,6 +56,7 @@ export function deltaAnwenden(m) {
     }
     if (d.du) { const alt = a.du; a.du = d.du; gruppen.add('du'); neueMeldungen(alt, a.du); }
     if (d.welt) { a.welt = d.welt; gruppen.add('welt'); }
+    if (d.partie) { a.partie = d.partie; gruppen.add('partie'); }
     if (d.t) a.t = d.t;
   }
   for (const i of m.erkundet || []) Z.nebel[i >> 3] |= 1 << (i & 7);
@@ -79,7 +85,7 @@ export function besitzerVon(i) { const f = feldInfo(i); if (!f || !f.s) return n
 
 /** Aktuelles Feld einer Einheit unter Berücksichtigung ihres Marschs (lokal interpoliert aus Server-Zeitstempeln). */
 export function aktuellesFeld(e) {
-  if (!e.pfad || !e.pfad.length) return e.feld;
+  if (!e.pfad || !e.pfad.length || Z.ansicht?.partie) return e.feld; // Runden: Einheiten stehen zwischen den Zügen auf ihrem Feld
   const t = serverJetzt();
   let f = e.feld;
   for (const p of e.pfad) { if (p.t <= t) f = p.f; else break; }

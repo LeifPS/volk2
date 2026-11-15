@@ -1,7 +1,7 @@
 // Netzwerk: Anmeldung per HTTP, Spiel per WebSocket (Befehle, Fragen, Deltas), automatische Wiederverbindung, Uhrabgleich.
 import { Z, melde, vollSetzen, deltaAnwenden, setzeVersatz } from './zustand.js';
 
-let ws = null, naechsteId = 1, offen = new Map(), wiederVersuche = 0, token = null, lokal = null;
+let ws = null, naechsteId = 1, offen = new Map(), wiederVersuche = 0, token = null, lokal = null, aktuellePartie = null;
 const TOKEN_KEY = 'volk_token';
 
 export function gespeichertesToken() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } }
@@ -13,15 +13,26 @@ async function post(pfad, daten) {
 }
 export const registrieren = (name, passwort) => post('/api/registrieren', { name, passwort });
 export const anmelden = (name, passwort) => post('/api/anmelden', { name, passwort });
-export function abmelden() { if (token) post('/api/abmelden', { token }); tokenSpeichern(null); token = null; try { ws?.close(); } catch { /* egal */ } }
+export function abmelden() { if (token) post('/api/abmelden', { token }); tokenSpeichern(null); token = null; aktuellePartie = null; try { ws?.close(); } catch { /* egal */ } }
+
+// ---------- Lobby ----------
+const mitToken = (d = {}) => ({ token: token || gespeichertesToken(), ...d });
+export const partienListe = () => post('/api/partien', mitToken());
+export const partieNeu = (name, volk, einstellungen) => post('/api/partie/neu', mitToken({ name, volk, einstellungen }));
+export const partieBeitreten = (partie, volk) => post('/api/partie/beitreten', mitToken({ partie, volk }));
+export const partieVerlassen = (partie) => post('/api/partie/verlassen', mitToken({ partie }));
+export const partieEinstellungen = (partie, einstellungen) => post('/api/partie/einstellungen', mitToken({ partie, einstellungen }));
+export const partieStarten = (partie) => post('/api/partie/starten', mitToken({ partie }));
+export const partieLoeschen = (partie) => post('/api/partie/loeschen', mitToken({ partie }));
+export function partieVerlassenSocket() { aktuellePartie = null; token = null; try { ws?.close(); } catch { /* egal */ } ws = null; }
 
 /** Lokaler Server (Demo-Modus): Objekt mit nachricht(text) und Rückkanal. */
 export function lokalVerbinden(server) { lokal = server; Z.verbunden = true; }
 
-export function verbinden(t) {
-  token = t;
+export function verbinden(t, partie = aktuellePartie) {
+  token = t; aktuellePartie = partie;
   return new Promise((ok, fehler) => {
-    const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?token=' + encodeURIComponent(t);
+    const url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws?token=' + encodeURIComponent(t) + '&partie=' + encodeURIComponent(partie || '');
     let erstes = true;
     ws = new WebSocket(url);
     ws.onopen = () => { wiederVersuche = 0; Z.verbunden = true; melde('verbindung', true); uhrAbgleichen(); };
@@ -33,7 +44,7 @@ export function verbinden(t) {
       if (erstes) { fehler(new Error(ev.code === 1006 ? 'Sitzung ungültig oder Server nicht erreichbar.' : 'Verbindung fehlgeschlagen.')); return; }
       if (!token) return;
       const warte = Math.min(15000, 1000 * Math.pow(1.6, wiederVersuche++));
-      setTimeout(() => verbinden(token).catch(() => melde('sitzung_ungueltig')), warte);
+      setTimeout(() => verbinden(token, aktuellePartie).catch(() => melde('sitzung_ungueltig')), warte);
     };
   });
 }
@@ -72,7 +83,6 @@ export async function frage(q) {
   if (!r.ok) throw new Error(r.fehler || 'Fehler');
   return r.daten;
 }
-export const volkGruenden = (name, farbe) => senden({ t: 'volk_gruenden', name, farbe });
 export const vollAnfordern = () => { if (lokal) lokal.nachricht(JSON.stringify({ t: 'voll' })); else if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: 'voll' })); };
 
 async function uhrAbgleichen() {

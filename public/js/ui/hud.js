@@ -161,6 +161,7 @@ function einheitPanel(e) {
   const kinder = [
     el('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } }, symbol(e.tier ? 'tier' : 'einheit', e.tier || e.typ, { farbe: v?.farbe, px: 48 }), el('div', el('h2', { text: e.tier ? { wolf: 'Wolfsrudel', baer: 'Bär', tiger: 'Tiger', jaguar: 'Jaguar', krokodil: 'Krokodil', schneeleopard: 'Schneeleopard' }[e.tier] || 'Raubtier' : d.name, style: { margin: 0 } }), el('div.klein', { text: (v?.name || '') + (eigen ? '' : v?.art === 'spieler' ? ' (Spieler)' : '') }))),
     el('div', { style: { margin: '6px 0' } }, balken(hp / 100, hp > 60 ? '' : hp > 30 ? 'gold' : 'rot'), el('div.klein', { text: `Lebenspunkte ${Math.round(hp)}/100` + (eigen && e.heilrate && hp < 100 ? ` · heilt ${Math.round(e.heilrate)}/h` : '') })),
+    eigen && e.mpMax != null ? el('div.klein', { class: e.mp > 0.01 ? 'gruen-t' : 'rot-t', text: `Bewegung: ${Math.round(e.mp * 10) / 10} von ${e.mpMax}${e.pfad?.length ? ' · marschiert weiter' : ''}`, tip: 'Bewegungspunkte in dieser Runde. Gelände kostet unterschiedlich viel; ein Angriff beendet die Bewegung. Zu weite Ziele erreichst du über mehrere Runden.' }) : null,
     el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 8px' } },
       zeile('staerke', 'Stärke ' + d.staerke, 'Kampfstärke: gilt im Nahkampf und bei der Verteidigung.'),
       d.fern ? zeile('fernkampf', 'Fern ' + d.fern, 'Fernkampfstärke: nur beim Fernangriff.') : null,

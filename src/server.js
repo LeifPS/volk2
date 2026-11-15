@@ -144,7 +144,7 @@ export class PartieServer {
       const info = this.sockets.info(ws);
       if (!info || !info.volk || !this.spiel.z.voelker[info.volk]) continue;
       let a = ansichten.get(info.volk);
-      if (!a) { a = this.spiel.ansichtFuer(info.volk); a.partie = this.spiel.partieAnsicht(); ansichten.set(info.volk, a); }
+      if (!a) { a = this.spiel.ansichtFuer(info.volk); ansichten.set(info.volk, a); }
       const alt = this.letzte.get(ws);
       if (!alt || volleKarte.has(info.volk)) {
         this.sockets.sende(ws, JSON.stringify({ t: 'voll', ansicht: a, nebel: this.spiel.nebelText(info.volk), version: VERSION }));

@@ -7,16 +7,17 @@ import { pruefe } from './spiel.js';
 import { bereichVon, istMilitaer } from './einheiten.js';
 
 const rund = (x) => Math.round(x * 100) / 100;
-
 export const ansicht = {
   /** Vollständige Ansicht für ein Volk. */
   ansichtFuer(vid) {
     const v = this.z.voelker[vid];
+    const part = this.z.global.partie;
+    if (part && (v.stand_um ?? this.t) < this.t) this.aendern(vid); // Stand auf die aktuelle Spielzeit bringen (Anzeige "pro Runde" ohne Hochrechnung)
     const r = this.raten(vid);
     const nebel = this.nebel(vid);
     const sicht = this.sichtbareFelder(vid);
     const erk = (i) => this.istErkundet(nebel, i);
-    const a = { t: this.t, du: null, voelker: {}, diplomatie: {}, staedte: {}, einheiten: {}, felder: {}, lager: {}, wunder: {}, angebote: {}, welt: {} };
+    const a = { t: this.t, partie: this.partieAnsicht(), du: null, voelker: {}, diplomatie: {}, staedte: {}, einheiten: {}, felder: {}, lager: {}, wunder: {}, angebote: {}, welt: {} };
     a.du = {
       id: v.id, name: v.name, farbe: v.farbe, art: v.art, gold: rund(v.gold), lager: Object.fromEntries(Object.entries(v.lager || {}).map(([k, x]) => [k, rund(x)])), stand_um: v.stand_um,
       raten: { gold: rund(r.gold), einnahmen: rund(r.einnahmen), unterhaltEinheiten: rund(r.unterhalt.einheiten), unterhaltGebaeude: rund(r.unterhalt.gebaeude), handel: rund(r.handel), wissenschaft: rund(r.wissenschaft), kultur: rund(r.kultur), material: r.material, kapazitaet: r.kapazitaet, luxus: r.luxus, boni: r.boni },
@@ -102,6 +103,7 @@ export const ansicht = {
     if (e.befoerderungen?.length) x.bef = e.befoerderungen;
     if (e.in) x.in = e.in;
     if (eigen) {
+      if (this.z.global.partie) { x.mp = Math.round((e.mp || 0) * 100) / 100; x.mpMax = Math.round(this.mpMax(e) * 100) / 100; }
       x.ep = e.ep || 0; x.abkling_bis = e.abkling_bis || 0; x.arbeit = e.arbeit || null; x.route = e.route || null; x.angriff = e.angriff ?? null;
       x.unterversorgt = !!e.unterversorgt; x.einsatz = e.einsatz || null; x.befoerderbar = this.befoerderungMoeglich(e); x.sicht = this.sichtweite(e);
       if (EINHEIT[e.typ]?.upgrade) x.aufruesten = this.aufruestenKosten(e);
@@ -120,7 +122,7 @@ export const ansicht = {
       for (const id of Object.keys(A)) if (!(id in N)) del.push(id);
       if (Object.keys(set).length || del.length) { d[k] = { set, del }; leer = false; }
     }
-    for (const k of ['du', 'welt']) if (JSON.stringify(alt[k]) !== JSON.stringify(neu[k])) { d[k] = neu[k]; leer = false; }
+    for (const k of ['du', 'welt', 'partie']) if (JSON.stringify(alt[k]) !== JSON.stringify(neu[k])) { d[k] = neu[k]; leer = false; }
     if (leer) return null;
     d.t = neu.t;
     return d;

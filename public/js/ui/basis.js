@@ -2,6 +2,10 @@
 import { sprite } from '../grafik/sprites.js';
 import { T } from '../texte.js';
 
+let partieInfo = null;
+/** Der Zustand meldet hier, wie die laufende Partie heißt (für Zeitangaben in Runden). */
+export function setzePartieQuelle(f) { partieInfo = f; }
+
 /** Erzeugt ein DOM-Element: el('div.klasse#id', {attr}, kinder...) */
 export function el(tag, attr, ...kinder) {
   const m = tag.match(/^([a-z0-9]+)?((?:[.#][^.#]+)*)$/i);
@@ -129,9 +133,11 @@ export function zahl(x, stellen = 0) {
 }
 export function vorzeichen(x, stellen = 0) { return (x >= 0 ? '+' : '−') + zahl(Math.abs(x), stellen); }
 /** Dauer in ms als "2 Std 20 Min", "3 Min 05 s", "1 Tag 4 Std". */
-export function dauerText(ms) {
+export function dauerText(ms, echt = false) {
   if (ms == null || !Number.isFinite(ms)) return '–';
   ms = Math.max(0, ms);
+  const pa = !echt && partieInfo?.();
+  if (pa) { const n = Math.ceil(ms / pa.rundeMs - 1e-9); return n + (n === 1 ? ' Runde' : ' Runden'); }
   const s = Math.round(ms / 1000);
   if (s < 60) return s + ' s';
   const m = Math.floor(s / 60);

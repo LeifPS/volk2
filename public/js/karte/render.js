@@ -376,7 +376,7 @@ function hellGenug(h) { const n = parseInt(h.slice(1), 16); const r = (n >> 16) 
 // ---------- Einheiten ----------
 function einheitPosition(e, t) {
   // Welt-Position interpoliert entlang des Pfades
-  if (!e.pfad || !e.pfad.length) return feldMitte(e.feld, R);
+  if (!e.pfad || !e.pfad.length || Z.ansicht?.partie) return feldMitte(e.feld, R);
   const jetzt = serverJetzt();
   let von = e.feld, vonT = null;
   for (let k = 0; k < e.pfad.length; k++) {

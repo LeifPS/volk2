@@ -2,20 +2,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { uhr, STD, MIN, TAG, neueWelt, spielerMitStadt, vorspulen, speicherAttrappe, socketAttrappe } from './hilfen.mjs';
-import { WeltServer } from '../src/server.js';
+import { PartieServer } from '../src/server.js';
 import { Konten } from '../src/konten.js';
 import { nachbarn } from '../public/shared/hex.js';
 import { karte } from '../public/shared/karte.js';
 import { GELAENDE } from '../public/shared/daten/gelaende.js';
 
-const env = { __eigeneUhr: true };
+const env = {};
 async function serverMitSpieler(name = 'anna') {
   const sp = speicherAttrappe(), so = socketAttrappe();
-  const srv = new WeltServer(sp, env, so);
-  const r = await srv.http('/api/registrieren', 'POST', { name, passwort: 'passwort1' }, 'ip-' + name);
-  const ws = so.neu(srv.verbindungPruefen(r.token)); srv.verbunden(ws);
-  await srv.nachricht(ws, JSON.stringify({ t: 'volk_gruenden', id: 1, name: name + 'volk', farbe: '#1010f0' }));
-  return { sp, so, srv, ws, token: r.token, vid: ws.info.volk };
+  const srv = new PartieServer(sp, env, so);
+  const r = srv.start({ id: 'reg001', name: 'Regression', host: name, spieler: [{ konto: name, name: name + 'volk', farbe: '#1010f0' }], einstellungen: { ki: [{ stufe: 'normal' }], stadtstaaten: 1 } });
+  assert.equal(r.ok, true, r.fehler);
+  const ws = so.neu({ konto: name }); srv.verbunden(ws);
+  return { sp, so, srv, ws, vid: ws.info.volk };
 }
 
 test('Aktives Naturereignis übersteht einen Neustart des Durable Objects', async () => {
@@ -26,10 +26,10 @@ test('Aktives Naturereignis übersteht einen Neustart des Durable Objects', asyn
   const id = s.neueId();
   (s.z.global.ereignisse ||= []).push({ id, typ: 'duerre', felder: st.gebiet.slice(), mitte: st.feld, start: s.t + MIN, ende: s.t + 10 * STD, aktiv: false, nahrung: -1 });
   s.markiere('g');
-  uhr.vorspulen(2 * MIN); srv.alarm(); s.raten(vid); srv.nachAenderung();
-  const neu = new WeltServer(sp, env, so);
+  s.verarbeite(s.t + 2 * MIN); s.raten(vid); srv.nachAenderung();
+  const neu = new PartieServer(sp, env, so);
   assert.doesNotThrow(() => neu.spiel.naechsteZeit());
-  assert.equal((await neu.http('/api/status', 'GET')).ok, true);
+  assert.ok(neu.spiel.z.global.ereignisse.some((x) => x.id === id), 'Ereignis blieb erhalten');
 });
 
 test('Waffenruhe gilt in beide Richtungen: offline gegangener Angreifer greift nach dem Marsch nicht an', () => {
@@ -93,12 +93,8 @@ test('Automatischer Friedensvorschlag kommt nach Ablauf erneut', () => {
 });
 
 test('Zwei Tabs: Schließen eines Tabs lässt den Spieler verbunden', async () => {
-  const sp = speicherAttrappe(), so = socketAttrappe();
-  const srv = new WeltServer(sp, env, so);
-  const r = await srv.http('/api/registrieren', 'POST', { name: 'zweitab', passwort: 'passwort1' }, 'z');
-  const w1 = so.neu(srv.verbindungPruefen(r.token)); srv.verbunden(w1);
-  const w2 = so.neu(srv.verbindungPruefen(r.token)); srv.verbunden(w2);
-  await srv.nachricht(w1, JSON.stringify({ t: 'volk_gruenden', id: 1, name: 'Zweitabvolk', farbe: '#1010f0' }));
+  const { srv, so, ws: w1 } = await serverMitSpieler('zweitab');
+  const w2 = so.neu({ konto: 'zweitab' }); srv.verbunden(w2);
   const v = srv.spiel.z.voelker[w1.info.volk];
   assert.equal(v.verbunden, 2);
   so.weg(w1); srv.getrennt(w1); srv.getrennt(w1);
