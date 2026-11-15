@@ -149,7 +149,7 @@ export const SPIELTEMPO = {
 /** Standard-Einstellungen einer Partie (der Host kann sie in der Lobby ändern). */
 export const PARTIE = {
   tempo: 'normal',
-  rundenlimit: 400,
+  rundenlimit: 500,
   siege: { eroberung: true, wissenschaft: true, punkte: true },
   // Zugzeit-Konto in echter Zeit: jeder hat ein Konto, das nur im eigenen Zug läuft und pro beendetem Zug wieder aufgefüllt wird.
   zugzeit: { aktiv: true, start: 24 * STD, plus: 1 * STD, max: 24 * STD, verpasstMax: 5 },
@@ -169,3 +169,14 @@ export const KI_STUFEN = [
 ];
 /** Boni einer KI-Stufe in Prozent (bau, forschung, gold) bzw. Stärkepunkten (kampf). Unbekannte Stufe = Normal. */
 export function kiBoni(stufe) { return KI_STUFEN.find((x) => x.id === stufe) || KI_STUFEN[1]; }
+
+// --- Runden-Dauern (Partie-Modus, Civ-Gefühl) ---
+// Im Rundenmodus werden Bau- und Forschungszeiten gestaucht: Frühes dauert einige Runden, Spätes deutlich länger, aber nicht
+// hunderte Runden. rundenZahl = A + B * Wurzel(Grundstunden), gemessen in Runden zu 2 Std Spielzeit (Normal); bei anderem Tempo
+// ändert sich die Zahl der Runden entsprechend. Eingestellt per tools/runden-balance.mjs.
+export const RUNDEN_REF_MS = 2 * 60 * 60 * 1000;
+export const RUNDEN_DAUER = { a: 1.3, b: 1.2, forschungFaktor: 1, bauFaktor: 1.6 };
+export function rundenDauerMs(grundSek, faktor = 1) {
+  const h = Math.max(0, grundSek) / 3600;
+  return Math.round((RUNDEN_DAUER.a + RUNDEN_DAUER.b * Math.sqrt(h)) * RUNDEN_REF_MS * faktor);
+}

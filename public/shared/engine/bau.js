@@ -4,7 +4,7 @@ import { abstand, nachbarn, umkreis } from '../hex.js';
 import { GELAENDE } from '../daten/gelaende.js';
 import { ROHSTOFFE } from '../daten/rohstoffe.js';
 import { GEB, WUNDER_NACH_ID, EINHEIT, VERBESSERUNG, FREIGESCHALTET_DURCH } from '../daten/index.js';
-import { bauDauer, anfangsTempo, kiBoni, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
+import { bauDauer, bauTempo, rundenDauerMs, RUNDEN_DAUER, anfangsTempo, kiBoni, ABBRUCH_ERSTATTUNG, STD, MIN } from '../regeln.js';
 import { pruefe } from './spiel.js';
 import { sucheWeg } from '../pfad.js';
 
@@ -83,6 +83,13 @@ export const bau = {
     if (art === 'einheit') prozent += this.gebaeudeSumme(s, 'einheit_bauzeit_prozent');
     const v = this.z.voelker[s.volk];
     if (v.art === 'ki') prozent -= kiBoni(v.ki?.stufe).bau;
+    if (this.imRundenModus()) {
+      // Civ-Gefühl: Dauer in ganzen Runden, Produktion und Boni verkürzen sie
+      const rm = this.partie().rundeMs;
+      const basis = rundenDauerMs(d.kosten.zeit, RUNDEN_DAUER.bauFaktor);
+      const ms = basis * Math.max(0.25, 1 + prozent / 100) / bauTempo(sr.p);
+      return Math.max(1, Math.ceil(ms / rm - 1e-9)) * rm;
+    }
     return bauDauer(d.kosten.zeit / anfangsTempo(d.zeitalter || 0), sr.p, prozent);
   },
 

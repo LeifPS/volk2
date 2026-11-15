@@ -132,6 +132,7 @@ export class PartieServer {
     if (!this.spiel) return;
     this.speichern();
     this.senden();
+    this.speichern(); // das Senden rechnet die Ansicht und kann Völker noch als geändert markieren
   }
 
   senden(nurWs = null) {
