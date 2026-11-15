@@ -426,7 +426,7 @@ T.lexikon = {
       '• **Lange drücken** auf einen Knopf zeigt seine Erklärung. • Alle Knöpfe sind groß genug für Finger. Spiele am besten im Querformat.',
     ] },
     { id: 'tasten', titel: 'Tastenkürzel', sym: 'menue', absaetze: () => [
-      '• **Leertaste:** Nächste Aktion • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
+      '• **Leertaste:** Nächste Aktion • **Enter:** Zug beenden • **F:** befestigen • **E:** erkunden • **B:** Stadt gründen • **Esc:** Fenster schließen / Auswahl aufheben • **F1:** Forschung • **F2:** Reich und Städte • **F3:** Diplomatie • **F4:** Rangliste • **F5:** Lexikon • **H:** Was soll ich tun? • **N:** Meldungen • **+ / −:** zoomen • **Pfeiltasten oder W A S D:** Karte verschieben',
     ] },
   ],
   startRegeln: ['ziel', 'zeit', 'bedienung_maus', 'bedienung_tablet', 'kampf', 'ki_stufen'],
@@ -440,7 +440,7 @@ T.hilfe = {
   tastenListe: [
     ['Leertaste', 'Nächste Aktion (Einheit oder Stadt, die einen Befehl braucht)'], ['Esc', 'Fenster schließen / Auswahl aufheben'],
     ['F1', 'Forschung'], ['F2', 'Reich und Städte'], ['F3', 'Diplomatie und Handel'], ['F4', 'Rangliste'], ['F5', 'Lexikon'],
-    ['H', 'Was soll ich tun?'], ['N', 'Meldungen'], ['+ / −', 'Zoomen'], ['Pfeile / W A S D', 'Karte verschieben'],
+    ['Enter', 'Zug beenden'], ['F', 'Einheit befestigen'], ['E', 'Späher: automatisch erkunden'], ['B', 'Siedler: Stadt gründen'], ['H', 'Was soll ich tun?'], ['N', 'Meldungen'], ['+ / −', 'Zoomen'], ['Pfeile / W A S D', 'Karte verschieben'],
   ],
   mausListe: [
     ['Linksklick', 'Auswählen'], ['Rechtsklick', 'Befehl: hinlaufen oder angreifen'], ['Ziehen', 'Karte verschieben'], ['Mausrad', 'Zoomen'], ['Doppelklick auf Stadt', 'Stadt öffnen'],

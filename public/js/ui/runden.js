@@ -63,6 +63,11 @@ function zeichne() {
   leiste.replaceChildren(...teile);
   knopf.style.display = ich ? '' : 'none';
   knopf.disabled = false;
+  if (warAmZug === false && ich) {
+    // Rundenbericht: was ist seit dem letzten Zug passiert (ungelesene Meldungen)?
+    const d = du();
+    if (d && (d.meldungen || []).some((m) => m.id > (d.gelesen_bis || 0))) setTimeout(() => import('./hud.js').then((h) => { if (Z.ansicht && amZug()) h.meldungsListe(); }), 600);
+  }
   if (warAmZug === false && ich) { toast('Du bist am Zug!', 'erfolg'); ton('meldung'); try { document.title = 'Du bist dran – Volk'; } catch { /* egal */ } }
   if (ich === false) { try { document.title = 'Volk'; } catch { /* egal */ } }
   if (letzteRunde && p.runde > letzteRunde && !ich) { /* neue Runde, anderer am Zug */ }

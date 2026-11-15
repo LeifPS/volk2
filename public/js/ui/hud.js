@@ -187,6 +187,19 @@ function aktKnopf(sym, text, f, o = {}) {
   return el('button.knopf' + (o.gold ? '.gold' : '') + (o.rot ? '.rot' : ''), { onclick: f, tip: o.tip || text, disabled: o.aus || null }, symbol('ui', sym), el('span', { text }));
 }
 
+/** Civ-Tastenkürzel für die ausgewählte eigene Einheit: F befestigen, E erkunden, B Stadt gründen. */
+export async function einheitenTaste(taste) {
+  const a = Z.auswahl;
+  if (a?.art !== 'einheit') return false;
+  const e = Z.ansicht?.einheiten?.[a.id];
+  if (!e || e.volk !== Z.volk) return false;
+  const d = EINHEIT[e.typ]; if (!d) return false;
+  if (taste === 'f' && d.klasse && !ZIVIL.has(d.klasse)) { await ausfuehren({ art: 'modus', einheit: e.id, modus: 'befestigt' }); return true; }
+  if (taste === 'e' && (d.klasse === 'spaeher' || d.faehigkeiten?.includes('erkunden'))) { await ausfuehren({ art: 'modus', einheit: e.id, modus: 'erkunden' }); return true; }
+  if (taste === 'b' && d.faehigkeiten?.includes('gruenden')) { await ausfuehren({ art: 'stadt_gruenden', einheit: e.id }); return true; }
+  return false;
+}
+
 async function ausfuehren(b, erfolgText) {
   const r = await befehl(b);
   if (!r.ok) { fehler(r.fehler); ton('fehler'); return null; }

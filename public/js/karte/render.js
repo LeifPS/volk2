@@ -374,9 +374,28 @@ function stadtBanner(st, x, y, s) {
 function hellGenug(h) { const n = parseInt(h.slice(1), 16); const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255; return r * 0.299 + g * 0.587 + b * 0.114 > 150; }
 
 // ---------- Einheiten ----------
+// Rundenmodus: Einheiten springen nicht, sondern gleiten in einem Schritt vom alten zum neuen Feld.
+const einheitenAnim = new Map();
+function partieEinheitPosition(e) {
+  const jetzt = performance.now();
+  let a = einheitenAnim.get(e.id);
+  if (!a) { a = { nach: e.feld, von: e.feld, t0: 0, dauer: 1 }; einheitenAnim.set(e.id, a); }
+  if (a.nach !== e.feld) {
+    const [ax, ay] = feldMitte(a.nach, R), [bx, by] = feldMitte(e.feld, R);
+    const felder = Math.hypot(bx - ax, by - ay) / (R * 1.7);
+    a.von = a.nach; a.nach = e.feld; a.t0 = jetzt; a.dauer = Math.min(900, 220 + 90 * felder);
+  }
+  const k = Math.max(0, Math.min(1, (jetzt - a.t0) / a.dauer));
+  if (k >= 1) return feldMitte(e.feld, R);
+  const f = 1 - (1 - k) * (1 - k); // sanft abbremsen
+  const [ax, ay] = feldMitte(a.von, R), [bx, by] = feldMitte(a.nach, R);
+  return [ax + (bx - ax) * f, ay + (by - ay) * f];
+}
+
 function einheitPosition(e, t) {
   // Welt-Position interpoliert entlang des Pfades
-  if (!e.pfad || !e.pfad.length || Z.ansicht?.partie) return feldMitte(e.feld, R);
+  if (Z.ansicht?.partie) return partieEinheitPosition(e);
+  if (!e.pfad || !e.pfad.length) return feldMitte(e.feld, R);
   const jetzt = serverJetzt();
   let von = e.feld, vonT = null;
   for (let k = 0; k < e.pfad.length; k++) {
